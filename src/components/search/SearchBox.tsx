@@ -2,15 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useI18n } from "../I18nProvider";
+import { useI18n, useSite } from "../I18nProvider";
 import { cx, PlatformIcon } from "../ui";
 import type { Platform } from "@/lib/platforms/types";
 import { routeForQuery } from "@/lib/route";
 
 export function SearchBox({ initialPlatform = "tiktok", size = "lg", initialQuery = "" }: { initialPlatform?: Platform; size?: "lg" | "md"; initialQuery?: string }) {
   const { t } = useI18n();
+  const { platforms } = useSite();
   const router = useRouter();
-  const [platform, setPlatform] = useState<Platform>(initialPlatform);
+  const [platform, setPlatform] = useState<Platform>(platforms.includes(initialPlatform) ? initialPlatform : platforms[0]);
   const [q, setQ] = useState(initialQuery);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,7 +28,7 @@ export function SearchBox({ initialPlatform = "tiktok", size = "lg", initialQuer
   return (
     <form onSubmit={submit} className={cx("mx-auto w-full", size === "lg" ? "max-w-2xl" : "max-w-xl")}>
       <div className="mb-3 flex justify-center gap-2">
-        {(["tiktok", "instagram"] as Platform[]).map((p) => (
+        {platforms.map((p) => (
           <button
             type="button"
             key={p}

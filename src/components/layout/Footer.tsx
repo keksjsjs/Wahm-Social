@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Dict } from "@/lib/i18n";
 import { LogoMark, Wordmark } from "./Logo";
+import { siteNow } from "@/lib/site/snapshot";
 
 export function Footer({ t }: { t: Dict }) {
   const cols: { title: string; links: [string, string][] }[] = [
@@ -70,7 +71,7 @@ export function Footer({ t }: { t: Dict }) {
         <div className="container-w flex flex-col items-center justify-between gap-2 py-6 text-xs text-ink-4 sm:flex-row">
           <span>{t.footer.disclaimer}</span>
           <span>
-            © {new Date().getFullYear()} Frostly · by Wahm (@iwahm) — {t.footer.rights}
+            © {new Date().getFullYear()} {siteNow().texts.footerCredit || "Frostly"} — {t.footer.rights}
           </span>
         </div>
       </div>

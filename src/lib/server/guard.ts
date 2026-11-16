@@ -2,9 +2,10 @@
 import { isPlatform, PlatformError, type Platform } from "../platforms/types";
 import { isValidUsername, normalizeUsername } from "../format";
 import { clientIp, enforceRateLimit } from "./rateLimit";
+import { platformEnabled } from "../site/flags";
 
 export function parsePlatform(v: string): Platform {
-  if (!isPlatform(v)) throw new PlatformError("invalid_input", "Unknown platform", 400);
+  if (!isPlatform(v) || !platformEnabled(v)) throw new PlatformError("invalid_input", "Unknown platform", 400);
   return v;
 }
 

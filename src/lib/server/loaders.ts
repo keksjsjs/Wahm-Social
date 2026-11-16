@@ -1,4 +1,5 @@
 import "server-only";
+import { platformEnabled } from "../site/flags";
 /**
  * Request-scoped data loaders for server components. `cache()` de-duplicates
  * calls between generateMetadata, layouts and pages within one request.
@@ -22,7 +23,7 @@ async function wrap<T>(fn: () => Promise<Sourced<T>>): Promise<Loaded<T>> {
 }
 
 export function parseRoute(platform: string, username: string): { platform: Platform; username: string } | null {
-  if (!isPlatform(platform)) return null;
+  if (!isPlatform(platform) || !platformEnabled(platform)) return null;
   const u = normalizeUsername(username);
   if (!isValidUsername(u)) return null;
   return { platform, username: u };

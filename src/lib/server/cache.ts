@@ -6,6 +6,7 @@ export interface CacheStore {
   get<T>(key: string): T | undefined;
   set<T>(key: string, value: T, ttlMs: number): void;
   delete(key: string): void;
+  clear(): void;
   stats(): { size: number; hits: number; misses: number };
 }
 
@@ -52,6 +53,10 @@ class MemoryLRU implements CacheStore {
 
   delete(key: string) {
     this.map.delete(key);
+  }
+
+  clear() {
+    this.map.clear();
   }
 
   stats() {

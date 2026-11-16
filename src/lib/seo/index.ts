@@ -3,11 +3,10 @@ import type { Metadata } from "next";
 import { env } from "../env";
 import type { Post, Profile } from "../platforms/types";
 import { compact } from "../format";
+import { siteNow } from "../site/snapshot";
 
-export const SITE_NAME = "Frostly";
-export const SITE_NAME_AR = "فروستلي";
-export const DEFAULT_DESCRIPTION =
-  "فروستلي: تحميل فيديو تيك توك بدون علامة مائية، تحميل ريلز وستوري انستقرام، عرض الحسابات ومعرفة المتابعين وتحليل التفاعل مجاناً. Frostly — TikTok downloader no watermark, Instagram reels & story downloader, profile viewer and analytics.";
+export { SITE_NAME, SITE_NAME_AR, DEFAULT_DESCRIPTION } from "./constants";
+import { SITE_NAME, SITE_NAME_AR, DEFAULT_DESCRIPTION } from "./constants";
 
 export const absUrl = (path = "/") => `${env.siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
@@ -23,7 +22,9 @@ export function buildMetadata(opts: {
   const description = opts.description ?? DEFAULT_DESCRIPTION;
   const url = absUrl(opts.path ?? "/");
   const latin = opts.title.split(/[|—]/).map((x) => x.trim()).find((x) => /[A-Za-z]{3}/.test(x) && !/[\u0600-\u06FF]/.test(x)) ?? "Frostly";
-  const image = opts.image ?? absUrl(`/api/og?title=${encodeURIComponent(latin)}`);
+  const site = siteNow();
+  const image = opts.image ?? (site.assets.ogImage ? absUrl(`/api/site-asset/${site.assets.ogImage}`) : absUrl(`/api/og?title=${encodeURIComponent(latin)}`));
+  const noindex = opts.noindex || !site.seo.robotsIndex;
   return {
     title: opts.title,
     description,
@@ -40,7 +41,7 @@ export function buildMetadata(opts: {
       type: opts.type === "video.other" ? "video.other" : opts.type === "article" ? "article" : opts.type === "profile" ? "profile" : "website",
     },
     twitter: { card: "summary_large_image", title: opts.title, description, images: [image], site: "@iwahm" },
-    robots: opts.noindex ? { index: false, follow: true } : { index: true, follow: true, "max-image-preview": "large" },
+    robots: noindex ? { index: false, follow: true } : { index: true, follow: true, "max-image-preview": "large" },
   };
 }
 

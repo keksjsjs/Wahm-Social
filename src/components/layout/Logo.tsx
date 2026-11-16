@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { siteNow } from "@/lib/site/snapshot";
 
 /** Frostly mark: a faceted ice-crystal inside a frosted rounded tile. */
 export function LogoMark({ size = 36 }: { size?: number }) {
@@ -27,6 +28,8 @@ export function LogoMark({ size = 36 }: { size?: number }) {
 }
 
 export function Wordmark() {
+  const custom = siteNow().brand.siteName.en.trim();
+  if (custom && custom !== "Frostly") return <span className="accent-text text-xl font-extrabold tracking-tight">{custom}</span>;
   return (
     <span className="text-xl font-extrabold tracking-tight">
       <span className="accent-text">Frost</span>

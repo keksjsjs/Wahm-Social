@@ -1,4 +1,7 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+import { getSettings } from "@/lib/site/store";
+import { DEFAULT_SETTINGS } from "@/lib/site/defaults";
 import { getDict } from "@/lib/i18n/server";
 import { Hero } from "@/components/content/Hero";
 import { PopularSearches } from "@/components/content/PopularSearches";
@@ -16,13 +19,19 @@ import { PricingTable } from "@/components/pricing/PricingTable";
 import { currentUser } from "@/lib/server/auth";
 import { billingMode } from "@/lib/env";
 
-export const metadata = buildMetadata({
-  title: "Frostly | تحميل فيديو تيك توك بدون علامة مائية وتحميل ريلز وستوري انستقرام — TikTok & Instagram Downloader",
-  description:
-    "فروستلي: أسرع موقع تحميل من تيك توك بدون علامة مائية، تحميل ريلز وصور وستوري انستقرام، عرض أي حساب ومعرفة المتابعين وتحليل التفاعل مجاناً. Frostly — free TikTok downloader (no watermark, MP4/MP3), Instagram reels & story downloader, profile viewer and engagement analytics.",
-  path: "/",
-  keywords: ALL_KEYWORDS,
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await getSettings();
+  const d = DEFAULT_SETTINGS.seo;
+  return buildMetadata({
+    title: s.seo.homeTitle || d.homeTitle,
+    description: s.seo.description || HOME_DESCRIPTION,
+    path: "/",
+    keywords: s.seo.keywords.length ? s.seo.keywords : ALL_KEYWORDS,
+  });
+}
+
+const HOME_DESCRIPTION =
+  "فروستلي: أسرع موقع تحميل من تيك توك بدون علامة مائية، تحميل ريلز وصور وستوري انستقرام، عرض أي حساب ومعرفة المتابعين وتحليل التفاعل مجاناً. Frostly — free TikTok downloader (no watermark, MP4/MP3), Instagram reels & story downloader, profile viewer and engagement analytics.";
 
 export const dynamic = "force-dynamic";
 

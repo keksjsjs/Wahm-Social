@@ -1,6 +1,9 @@
 /**
  * Centralised, typed access to environment variables.
  * Secrets are never exposed to the client — only NEXT_PUBLIC_* are.
+ *
+ * Every field is a getter so values edited in the admin panel (applied onto
+ * process.env at runtime, see lib/site/apply.ts) take effect without a redeploy.
  */
 function read(name: string, fallback = ""): string {
   const v = process.env[name];
@@ -8,28 +11,62 @@ function read(name: string, fallback = ""): string {
 }
 
 export const env = {
-  siteUrl: read("NEXT_PUBLIC_SITE_URL", read("RENDER_EXTERNAL_URL", "http://localhost:3000")).replace(/\/$/, ""),
-  jwtSecret: read("JWT_SECRET", "wahm-dev-secret-change-me-please-0123456789"),
-  adminEmails: read("ADMIN_EMAILS")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean),
-  igSessionId: read("IG_SESSIONID"),
-  igCsrfToken: read("IG_CSRFTOKEN"),
-  igDsUserId: read("IG_DS_USER_ID"),
-  igMid: read("IG_MID"),
-  igDatr: read("IG_DATR"),
-  scraperProxy: read("SCRAPER_PROXY"),
+  get siteUrl() {
+    return read("NEXT_PUBLIC_SITE_URL", read("RENDER_EXTERNAL_URL", "http://localhost:3000")).replace(/\/$/, "");
+  },
+  get jwtSecret() {
+    return read("JWT_SECRET", "wahm-dev-secret-change-me-please-0123456789");
+  },
+  get adminEmails() {
+    return read("ADMIN_EMAILS")
+      .split(",")
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  },
+  get igSessionId() {
+    return read("IG_SESSIONID");
+  },
+  get igCsrfToken() {
+    return read("IG_CSRFTOKEN");
+  },
+  get igDsUserId() {
+    return read("IG_DS_USER_ID");
+  },
+  get igMid() {
+    return read("IG_MID");
+  },
+  get igDatr() {
+    return read("IG_DATR");
+  },
+  get scraperProxy() {
+    return read("SCRAPER_PROXY");
+  },
   /** Optional TikTok web session cookie (sessionid) for list endpoints. */
-  tiktokSessionId: read("TIKTOK_SESSIONID"),
+  get tiktokSessionId() {
+    return read("TIKTOK_SESSIONID");
+  },
   /** Full TikTok Cookie header from a logged-in browser (msToken, ttwid, tt_csrf_token, …). Never logged. */
-  tiktokCookie: read("TIKTOK_COOKIE"),
-  stripeSecret: read("STRIPE_SECRET_KEY"),
-  stripePriceMonthly: read("STRIPE_PRICE_PRO_MONTHLY"),
-  stripePriceYearly: read("STRIPE_PRICE_PRO_YEARLY"),
-  stripeWebhookSecret: read("STRIPE_WEBHOOK_SECRET"),
-  demoMode: read("DEMO_MODE", "auto") as "auto" | "on" | "off",
-  dataDir: read("DATA_DIR", "./data"),
+  get tiktokCookie() {
+    return read("TIKTOK_COOKIE");
+  },
+  get stripeSecret() {
+    return read("STRIPE_SECRET_KEY");
+  },
+  get stripePriceMonthly() {
+    return read("STRIPE_PRICE_PRO_MONTHLY");
+  },
+  get stripePriceYearly() {
+    return read("STRIPE_PRICE_PRO_YEARLY");
+  },
+  get stripeWebhookSecret() {
+    return read("STRIPE_WEBHOOK_SECRET");
+  },
+  get demoMode() {
+    return read("DEMO_MODE", "auto") as "auto" | "on" | "off";
+  },
+  get dataDir() {
+    return read("DATA_DIR", "./data");
+  },
   isProd: process.env.NODE_ENV === "production",
 };
 
@@ -37,8 +74,12 @@ export const billingMode = (): "stripe" | "mock" => (env.stripeSecret ? "stripe"
 
 /** Official TikTok Research API credentials (https://developers.tiktok.com/products/research-api/). */
 export const tiktokResearch = {
-  clientKey: process.env.TIKTOK_CLIENT_KEY ?? "",
-  clientSecret: process.env.TIKTOK_CLIENT_SECRET ?? "",
+  get clientKey() {
+    return process.env.TIKTOK_CLIENT_KEY ?? "";
+  },
+  get clientSecret() {
+    return process.env.TIKTOK_CLIENT_SECRET ?? "";
+  },
   get enabled() {
     return Boolean(this.clientKey && this.clientSecret);
   },

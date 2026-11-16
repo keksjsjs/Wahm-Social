@@ -50,11 +50,6 @@ export default async function AccountPage({ searchParams }: { searchParams: { up
           </p>
         </div>
         <div className="flex gap-2">
-          {user.role === "admin" && (
-            <Link href="/admin" className="btn-ghost">
-              {t.nav.admin}
-            </Link>
-          )}
           <LogoutButton />
         </div>
       </div>

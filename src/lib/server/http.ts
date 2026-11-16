@@ -91,15 +91,19 @@ export function looksLikeBotWall(html: string): boolean {
   return /Just a moment\.\.\.|captcha|challenge-platform|Please wait\.\.\./i.test(html.slice(0, 4000));
 }
 
-let proxyFetch: typeof fetch | null | undefined;
-/** fetch bound to SCRAPER_PROXY (http(s)://user:pass@host:port), or null when not configured. */
-async function proxiedFetch(): Promise<typeof fetch | null> {
-  if (proxyFetch !== undefined) return proxyFetch;
-  const url = process.env.SCRAPER_PROXY;
-  if (!url) return (proxyFetch = null);
+let proxyFetch: { url: string; fn: typeof fetch } | null = null;
+/**
+ * fetch bound to SCRAPER_PROXY (http(s)://user:pass@host:port), or null when not configured.
+ * Re-created whenever the proxy URL changes (it can be edited live from the admin panel).
+ */
+export async function proxiedFetch(override?: string): Promise<typeof fetch | null> {
+  const url = override ?? process.env.SCRAPER_PROXY;
+  if (!url) return null;
+  if (!override && proxyFetch?.url === url) return proxyFetch.fn;
   const { ProxyAgent, fetch: ufetch } = await import("undici");
   const dispatcher = new ProxyAgent(url);
-  proxyFetch = ((input: string, init?: RequestInit) =>
+  const fn = ((input: string, init?: RequestInit) =>
     ufetch(input, { ...(init as object), dispatcher } as never)) as unknown as typeof fetch;
-  return proxyFetch;
+  if (!override) proxyFetch = { url, fn };
+  return fn;
 }

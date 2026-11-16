@@ -1,35 +1,31 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
-import { cookies } from "next/headers";
-import { THEME_COOKIE, themeBootScript } from "@/lib/theme";
-import { ALL_KEYWORDS } from "@/lib/seo/keywords";
+import { cookies, headers } from "next/headers";
+import { THEME_COOKIE, themeBoot } from "@/lib/theme";
 import "./globals.css";
 import { getDict } from "@/lib/i18n/server";
 import { dirFor } from "@/lib/i18n";
 import { I18nProvider } from "@/components/I18nProvider";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { Banner } from "@/components/layout/Banner";
 import { currentUser, publicUser } from "@/lib/server/auth";
 import { env } from "@/lib/env";
-import { DEFAULT_DESCRIPTION, jsonLdOrganization, jsonLdWebsite } from "@/lib/seo";
+import { jsonLdOrganization, jsonLdWebsite } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { getSettings } from "@/lib/site/store";
+import { siteMetadata } from "@/lib/site/metadata";
+import { accentCss } from "@/lib/site/themeCss";
+import { publicSite } from "@/lib/site/publicFlags";
 
 const latin = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], variable: "--font-ar", display: "swap" });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(env.siteUrl),
-  title: { default: "Frostly — TikTok & Instagram Downloader, Viewer & Analytics | فروستلي", template: "%s" },
-  description: DEFAULT_DESCRIPTION,
-  applicationName: "Frostly",
-  authors: [{ name: "Wahm", url: "https://x.com/iwahm" }],
-  keywords: ALL_KEYWORDS,
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  category: "technology",
-  openGraph: { siteName: "Frostly", type: "website", images: ["/api/og"] },
-  twitter: { card: "summary_large_image", site: "@iwahm" },
-  formatDetection: { telephone: false },
-};
+/** Global metadata comes from admin settings (title, description, keywords, icons, OG, verification, robots). */
+export async function generateMetadata(): Promise<Metadata> {
+  const s = await getSettings();
+  return { metadataBase: new URL(env.siteUrl), ...siteMetadata(s) };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -41,20 +37,31 @@ export const viewport: Viewport = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const s = await getSettings();
   const { locale, t } = getDict();
-  const user = await currentUser();
+  const isPanel = headers().get("x-frostly-cp") === "1";
+  const user = isPanel ? null : await currentUser();
   const theme = cookies().get(THEME_COOKIE)?.value;
+  const accent = accentCss(s.theme);
   return (
     <html lang={locale} dir={dirFor(locale)} className={`${latin.variable} ${arabic.variable} ${theme === "dark" ? "dark" : ""}`} suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+        <script dangerouslySetInnerHTML={{ __html: themeBoot(s.theme.defaultTheme) }} />
+        {accent && <style dangerouslySetInnerHTML={{ __html: accent }} />}
       </head>
       <body className="font-sans">
-        <JsonLd data={[jsonLdWebsite(), jsonLdOrganization()]} />
-        <I18nProvider locale={locale} t={t}>
-          <Header t={t} user={user ? publicUser(user) : null} />
-          <main className="min-h-[60vh]">{children}</main>
-          <Footer t={t} />
+        <I18nProvider locale={locale} t={t} site={publicSite(s)}>
+          {isPanel ? (
+            <main className="min-h-screen">{children}</main>
+          ) : (
+            <>
+              <JsonLd data={[jsonLdWebsite(), jsonLdOrganization()]} />
+              <Banner s={s} locale={locale} />
+              <Header t={t} user={user ? publicUser(user) : null} />
+              <main className="min-h-[60vh]">{children}</main>
+              <Footer t={t} />
+            </>
+          )}
         </I18nProvider>
       </body>
     </html>

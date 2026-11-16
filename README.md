@@ -88,3 +88,15 @@ Instagram: server session `friendships/{id}/followers` for public accounts.
 
 ## TikTok account location
 Country = `locationCreated` of the latest public videos (where they were posted), plus last tagged place and account language.
+
+## Admin panel
+
+A secret control panel lives at `/<ADMIN_PATH>/` (random slug in Render env; every other admin-like path returns 404).
+Login is password-only (bcrypt hash in `ADMIN_PASSWORD_HASH`, 5 attempts / 15 min / IP, 12 h signed httpOnly cookie scoped to the panel path).
+From the panel you can edit the site name and all home/footer copy, the announcement banner, SEO (titles, description, keywords,
+Google/Bing verification, robots on/off), favicon / OG / hero images, `SCRAPER_PROXY` (with a live test), Instagram/TikTok sessions and keys,
+feature toggles, Pro prices, DEMO_MODE, accent colours and default theme, plus a status page with "clear cache".
+
+Persistence: settings are committed to a **private GitHub repo** (`ADMIN_DATA_REPO`) through a write-only deploy key scoped to that repo
+(`ADMIN_DATA_SSH_KEY`). Pushes there never redeploy the app, survive Render free-tier restarts/redeploys, and are refreshed every ~minute.
+Secrets edited in the panel are stored AES-256-GCM encrypted (key derived from `JWT_SECRET`) in `secrets.enc.json` and applied onto `process.env` at runtime.

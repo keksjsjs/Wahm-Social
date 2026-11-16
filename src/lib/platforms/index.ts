@@ -1,4 +1,5 @@
 import "server-only";
+import { DISABLED_MSG, featureOn, requireFeatureOn } from "../site/flags";
 /**
  * Platform service: the only entry point UI/API code should use.
  * Adds caching, demo fallback, and source labelling on top of raw adapters.
@@ -81,6 +82,7 @@ const TIKWM_BLOCKED_NOTICE =
   "مصدر الستوري الاحتياطي (tikwm) محجوب من عنوان السيرفر حالياً. أضف بروكسي سكني أو منزلي في SCRAPER_PROXY ثم أعد المحاولة. The tikwm stories fallback is blocked from this server IP — set a residential or home-router proxy in SCRAPER_PROXY and try again.";
 
 export async function getStories(platform: Platform, username: string): Promise<Sourced<Story[]>> {
+  if (!featureOn("stories")) return { data: [], source: "live", notice: DISABLED_MSG.stories };
   if (platform === "tiktok" && env.demoMode !== "on") {
     try {
       const [payload, fromCache] = await cached(`stories:${platform}:${username}:v2`, TTL.stories, async () => {
@@ -101,6 +103,7 @@ export async function getStories(platform: Platform, username: string): Promise<
 
 /** Followers/following honouring each account's own privacy (see connections/index.ts). */
 export async function getConnections(platform: Platform, username: string, kind: "followers" | "following", cursor?: string): Promise<Sourced<ConnectionsResult>> {
+  requireFeatureOn("followers");
   const p = await getProfile(platform, username);
   if (p.source === "demo") {
     // Profile scrape blocked — but a logged-in TikTok browser session can still open the public list.

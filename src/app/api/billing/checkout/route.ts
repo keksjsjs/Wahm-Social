@@ -11,10 +11,12 @@ import { Payments, Users } from "@/lib/server/db";
 import { requireUser } from "@/lib/server/auth";
 import { handler } from "@/lib/server/respond";
 import { PlatformError } from "@/lib/platforms/types";
+import { requireFeatureOn } from "@/lib/site/flags";
 
 const Body = z.object({ plan: z.enum(["pro", "business"]), interval: z.enum(["month", "year"]) });
 
 export const POST = handler(async (req: Request) => {
+  requireFeatureOn("pro");
   const user = await requireUser();
   const parsed = Body.safeParse(await req.json().catch(() => ({})));
   if (!parsed.success) throw new PlatformError("invalid_input", "Invalid plan", 400);

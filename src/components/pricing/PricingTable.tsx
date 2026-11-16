@@ -3,11 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FEATURE_LABELS, PLANS, type PlanId } from "@/lib/plans";
-import { useI18n } from "../I18nProvider";
+import { useI18n, useSite } from "../I18nProvider";
 import { cx, ProBadge } from "../ui";
 
 export function PricingTable({ currentPlan, mock }: { currentPlan: PlanId | null; mock: boolean }) {
   const { t, locale } = useI18n();
+  const site = useSite();
   const router = useRouter();
   const [interval, setInterval] = useState<"month" | "year">("year");
   const [busy, setBusy] = useState<PlanId | null>(null);
@@ -29,6 +30,7 @@ export function PricingTable({ currentPlan, mock }: { currentPlan: PlanId | null
     }
   }
 
+  if (!site.pro) return <p className="card p-6 text-center text-ink-3">{locale === "ar" ? "اشتراكات برو متوقفة مؤقتاً." : "Pro plans are temporarily unavailable."}</p>;
   return (
     <div>
       <div className="mb-8 flex flex-col items-center gap-3">
@@ -49,7 +51,8 @@ export function PricingTable({ currentPlan, mock }: { currentPlan: PlanId | null
       </div>
       <div className="grid gap-5 lg:grid-cols-3">
         {Object.values(PLANS).map((p) => {
-          const price = interval === "year" ? p.priceYearly : p.priceMonthly;
+          const pr = site.prices;
+          const price = p.id === "pro" ? (interval === "year" ? pr.proYearly : pr.proMonthly) : p.id === "business" ? (interval === "year" ? pr.bizYearly : pr.bizMonthly) : 0;
           const isCurrent = currentPlan === p.id;
           return (
             <div key={p.id} className={cx("card relative flex flex-col p-7", p.highlight && "border-accent-500/50 shadow-glow lg:-translate-y-2")}>

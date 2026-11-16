@@ -1,4 +1,10 @@
 /** Plan catalogue and feature gates — the single source of truth for Pro gating. */
+import { priceOverrides } from "./site/prices";
+
+const price = (k: "proMonthly" | "proYearly" | "bizMonthly" | "bizYearly", fallback: number) => {
+  const v = priceOverrides()?.[k];
+  return typeof v === "number" && v > 0 ? v : fallback;
+};
 
 export type PlanId = "free" | "pro" | "business";
 
@@ -43,8 +49,12 @@ export const PLANS: Record<PlanId, Plan> = {
   pro: {
     id: "pro",
     name: { ar: "برو", en: "Pro" },
-    priceMonthly: 7.99,
-    priceYearly: 59.99,
+    get priceMonthly() {
+      return price("proMonthly", 7.99);
+    },
+    get priceYearly() {
+      return price("proYearly", 59.99);
+    },
     dailyLookups: 1000,
     dailyDownloads: 500,
     watchlistSize: 50,
@@ -56,8 +66,12 @@ export const PLANS: Record<PlanId, Plan> = {
   business: {
     id: "business",
     name: { ar: "أعمال", en: "Business" },
-    priceMonthly: 29.99,
-    priceYearly: 249.99,
+    get priceMonthly() {
+      return price("bizMonthly", 29.99);
+    },
+    get priceYearly() {
+      return price("bizYearly", 249.99);
+    },
     dailyLookups: 20000,
     dailyDownloads: 5000,
     watchlistSize: 500,

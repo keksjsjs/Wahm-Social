@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Dict, Locale } from "@/lib/i18n";
 import { Badge, PlatformIcon } from "../ui";
 import { SearchBox } from "../search/SearchBox";
+import { siteNow } from "@/lib/site/snapshot";
 
 export function Hero({ t, locale, trending }: { t: Dict; locale: Locale; trending: { platform: "tiktok" | "instagram"; username: string }[] }) {
   return (
@@ -35,7 +36,7 @@ export function Hero({ t, locale, trending }: { t: Dict; locale: Locale; trendin
           <div className="absolute -inset-6 rounded-[2.5rem] bg-accent-gradient opacity-20 blur-3xl" />
           <div className="card relative overflow-hidden p-2">
             <Image
-              src="/hero.webp"
+              src={siteNow().assets.heroImage ? `/api/site-asset/${siteNow().assets.heroImage}` : "/hero.webp"}
               alt={locale === "ar" ? "فروستلي — تحميل وعرض تيك توك وانستقرام" : "Frostly — TikTok & Instagram downloader and viewer"}
               width={1152}
               height={864}

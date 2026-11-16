@@ -6,6 +6,7 @@ import { LangToggle } from "./LangToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { MobileMenu, NavLinks } from "./NavLinks";
 import { ProBadge } from "../ui";
+import { featureOn } from "@/lib/site/flags";
 
 export function Header({ t, user }: { t: Dict; user: SessionUser | null }) {
   return (
@@ -29,9 +30,11 @@ export function Header({ t, user }: { t: Dict; user: SessionUser | null }) {
               <Link href="/login" className="btn-ghost btn-sm hidden sm:inline-flex">
                 {t.nav.login}
               </Link>
-              <Link href="/pricing" className="btn-primary btn-sm">
-                {t.pro.upgrade}
-              </Link>
+              {featureOn("pro") && (
+                <Link href="/pricing" className="btn-primary btn-sm">
+                  {t.pro.upgrade}
+                </Link>
+              )}
             </>
           )}
           <MobileMenu authed={!!user} />
