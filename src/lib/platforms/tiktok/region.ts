@@ -1,22 +1,24 @@
 import "server-only";
 /**
  * Account country without needing posts.
- * 1. user.region from the SSR profile (works for many accounts, including new ones)
- * 2. Logged-in SSR of the same page (region is sometimes only present when signed in)
+ * 1. user.region from the (anonymous) SSR profile — present for many accounts, including new ones
+ * 2. Logged-in SSR of the same page
  * 3. Session-authenticated /api/user/detail/
- * 4. Per-video locationCreated (last resort when region is absent)
+ * 4. Per-video locationCreated — last resort when region is absent (and the account has posts)
+ * Region lookups and video sampling run in parallel so we never lose the video fallback to timeouts.
  */
 import type { Profile, ProfileLocation } from "../types";
 import { httpGet } from "../../server/http";
 import { cookieValue, hasTikTokSession, tiktokWebHeaders } from "./session";
 import { accountLocation } from "./location";
-
-let lastRegionTry: { at: string; step: string; found: boolean; keys?: string[] } | null = null;
-export const regionTry = () => lastRegionTry;
+import { rememberedRegion } from "./followers/web";
 
 function asCountry(v: unknown): string | undefined {
   return typeof v === "string" && /^[A-Za-z]{2}$/.test(v) ? v.toUpperCase() : undefined;
 }
+
+let lastRegionTry: { at: string; step: string; found: boolean; keys?: string[] } | null = null;
+export const regionTry = () => lastRegionTry;
 
 async function pageRegion(username: string): Promise<string | undefined> {
   if (!hasTikTokSession()) return undefined;
@@ -27,10 +29,21 @@ async function pageRegion(username: string): Promise<string | undefined> {
       timeoutMs: 10000,
     });
     const m = res.text.match(/id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
-    if (!m) return undefined;
-    const u = JSON.parse(m[1])?.__DEFAULT_SCOPE__?.["webapp.user-detail"]?.userInfo?.user;
-    return asCountry(u?.region);
-  } catch {
+    if (!m) {
+      lastRegionTry = { at: new Date().toISOString(), step: "page_ssr", found: false, keys: [`http_${res.status}`, `len_${res.text.length}`] };
+      return undefined;
+    }
+    const u = JSON.parse(m[1])?.__DEFAULT_SCOPE__?.["webapp.user-detail"]?.userInfo?.user ?? {};
+    const found = asCountry(u?.region);
+    lastRegionTry = {
+      at: new Date().toISOString(),
+      step: "page_ssr",
+      found: !!found,
+      keys: Object.keys(u).filter((k) => /region|country|location|lang|commerce/i.test(k) || k === "uniqueId"),
+    };
+    return found;
+  } catch (e) {
+    lastRegionTry = { at: new Date().toISOString(), step: "page_ssr", found: false, keys: [(e as Error).message?.slice(0, 40) ?? "err"] };
     return undefined;
   }
 }
@@ -53,33 +66,46 @@ async function detailRegion(username: string, secUid?: string): Promise<string |
       timeoutMs: 8000,
     });
     if (!res.text.trimStart().startsWith("{")) {
-      lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: false, keys: [`http_${res.status}`, `len_${res.text.length}`] };
+      // Keep earlier page_ssr diagnostic if it found keys; otherwise record this miss.
+      if (!lastRegionTry?.found) lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: false, keys: [`http_${res.status}`, `len_${res.text.length}`] };
       return undefined;
     }
     const j = JSON.parse(res.text);
     const u = j?.userInfo?.user ?? j?.user ?? {};
-    const keys = Object.keys(u).filter((k) => /region|country|location|lang|commerce/i.test(k) || ["uniqueId","nickname","region","language"].includes(k));
     const found = asCountry(u?.region);
-    lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: !!found, keys };
+    lastRegionTry = {
+      at: new Date().toISOString(),
+      step: "user_detail",
+      found: !!found,
+      keys: Object.keys(u).filter((k) => /region|country|location|lang|commerce/i.test(k) || k === "uniqueId"),
+    };
     return found;
-  } catch (e) {
-    lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: false, keys: [(e as Error).message?.slice(0, 40) ?? "err"] };
+  } catch {
     return undefined;
   }
 }
 
 export async function resolveLocation(profile: Profile): Promise<ProfileLocation | undefined> {
-  let region = profile.region;
-  if (!region) region = await pageRegion(profile.username).catch(() => undefined);
-  if (!region) region = await detailRegion(profile.username, profile.secUid).catch(() => undefined);
+  // Run region enrichment and video sampling together so video country isn't lost to timeouts.
+  const videoPromise = profile.isPrivate
+    ? Promise.resolve(undefined)
+    : Promise.race([
+        accountLocation(profile.username, profile.language).catch(() => undefined),
+        new Promise<undefined>((r) => setTimeout(() => r(undefined), 10000)),
+      ]);
 
-  let fromVideos: ProfileLocation | undefined;
-  if (!profile.isPrivate) {
-    fromVideos = await Promise.race([
-      accountLocation(profile.username, profile.language).catch(() => undefined),
-      new Promise<undefined>((r) => setTimeout(() => r(undefined), 9000)),
-    ]);
-  }
+  const regionPromise = (async () => {
+    let region = profile.region ?? rememberedRegion(profile.username);
+    if (region) {
+      lastRegionTry = { at: new Date().toISOString(), step: profile.region ? "ssr_field" : "list_hint", found: true, keys: ["region"] };
+      return region;
+    }
+    if (!region) region = await pageRegion(profile.username).catch(() => undefined);
+    if (!region) region = await detailRegion(profile.username, profile.secUid).catch(() => undefined);
+    return region;
+  })();
+
+  const [region, fromVideos] = await Promise.all([regionPromise, videoPromise]);
 
   if (region) {
     return {

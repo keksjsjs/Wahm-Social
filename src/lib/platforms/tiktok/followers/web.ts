@@ -22,17 +22,31 @@ async function anonCookies(username: string, ua: string): Promise<string> {
   }
 }
 
+/** username → ISO country, learned from session list responses (those user objects often include region). */
+const regionHints = new Map<string, string>();
+export function rememberedRegion(username: string): string | undefined {
+  return regionHints.get(username.toLowerCase());
+}
+
 function parseUsers(j: any): Connection[] {
   const list: any[] = j?.userList ?? j?.followings ?? j?.followers ?? j?.userInfoList ?? [];
   return list
     .map((x) => x?.user ?? x)
     .filter((u) => u?.uniqueId || u?.unique_id)
-    .map((u) => ({
-      username: u.uniqueId || u.unique_id,
-      displayName: u.nickname || u.uniqueId || u.unique_id,
-      avatarUrl: u.avatarThumb || u.avatarMedium || u.avatar_thumb?.url_list?.[0] || "",
-      verified: !!u.verified,
-    }));
+    .map((u) => {
+      const username = u.uniqueId || u.unique_id;
+      const region = typeof u.region === "string" && /^[A-Za-z]{2}$/.test(u.region) ? u.region.toUpperCase() : undefined;
+      if (region) {
+        regionHints.set(String(username).toLowerCase(), region);
+        if (regionHints.size > 5000) regionHints.delete(regionHints.keys().next().value as string);
+      }
+      return {
+        username,
+        displayName: u.nickname || username,
+        avatarUrl: u.avatarThumb || u.avatarMedium || u.avatar_thumb?.url_list?.[0] || "",
+        verified: !!u.verified,
+      };
+    });
 }
 
 async function callList(
