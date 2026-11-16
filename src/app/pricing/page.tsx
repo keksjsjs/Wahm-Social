@@ -9,7 +9,7 @@ import { Faq } from "@/components/content/Faq";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { FEATURE_LABELS, PLANS, type Feature } from "@/lib/plans";
 
-export const metadata = buildMetadata({ title: "الأسعار — وهم برو | Wahm Pro Pricing", path: "/pricing", description: "خطط وهم سوشال: مجاني، برو، وأعمال. تحميل جماعي، مقارنة، مراقبة، تحليلات متقدمة وAPI." });
+export const metadata = buildMetadata({ title: "الأسعار — فروستلي برو | Frostly Pro Pricing", path: "/pricing", description: "خطط فروستلي: مجاني، برو، وأعمال. تحميل جماعي، مقارنة، مراقبة، تحليلات متقدمة وAPI." });
 export const dynamic = "force-dynamic";
 
 export default async function PricingPage() {
@@ -19,15 +19,15 @@ export default async function PricingPage() {
   return (
     <div className="container-w pb-10">
       <JsonLd data={jsonLdFaq(FAQ[locale])} />
-      <PageHeader title={t.pricing.title} subtitle={t.pricing.subtitle} eyebrow={<Badge tone="gold">Wahm Pro</Badge>} />
+      <PageHeader title={t.pricing.title} subtitle={t.pricing.subtitle} eyebrow={<Badge tone="gold">Frostly Pro</Badge>} />
       <PricingTable currentPlan={user?.plan ?? null} mock={billingMode() === "mock"} />
       <div className="card mt-16 overflow-x-auto">
         <table className="w-full min-w-[560px] text-sm">
           <thead>
-            <tr className="border-b border-white/10 text-slate-400">
+            <tr className="border-b border-line text-ink-3">
               <th className="p-4 text-start">{t.compare.metric}</th>
               {Object.values(PLANS).map((p) => (
-                <th key={p.id} className="p-4 text-center text-white">
+                <th key={p.id} className="p-4 text-center text-ink">
                   {p.name[locale]}
                 </th>
               ))}
@@ -35,11 +35,11 @@ export default async function PricingPage() {
           </thead>
           <tbody>
             {features.map((f) => (
-              <tr key={f} className="border-b border-white/[0.04]">
-                <td className="p-4 text-slate-300">{FEATURE_LABELS[f][locale]}</td>
+              <tr key={f} className="border-b border-line">
+                <td className="p-4 text-ink-2">{FEATURE_LABELS[f][locale]}</td>
                 {Object.values(PLANS).map((p) => (
                   <td key={p.id} className="p-4 text-center">
-                    {p.features.includes(f) ? <span className="text-gold-400">✓</span> : <span className="text-slate-600">—</span>}
+                    {p.features.includes(f) ? <span className="text-accent-500 dark:text-accent-400">✓</span> : <span className="text-ink-4">—</span>}
                   </td>
                 ))}
               </tr>

@@ -26,3 +26,12 @@ export const env = {
 };
 
 export const billingMode = (): "stripe" | "mock" => (env.stripeSecret ? "stripe" : "mock");
+
+/** Official TikTok Research API credentials (https://developers.tiktok.com/products/research-api/). */
+export const tiktokResearch = {
+  clientKey: process.env.TIKTOK_CLIENT_KEY ?? "",
+  clientSecret: process.env.TIKTOK_CLIENT_SECRET ?? "",
+  get enabled() {
+    return Boolean(this.clientKey && this.clientSecret);
+  },
+};

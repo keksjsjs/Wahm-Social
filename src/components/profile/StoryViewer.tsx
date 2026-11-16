@@ -29,7 +29,7 @@ export function StoryViewer({ stories, downloadable }: { stories: Story[]; downl
     <>
       <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-6">
         {stories.map((s, i) => (
-          <button key={s.id} onClick={() => setOpen(i)} className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-gold-500/30 bg-navy-800">
+          <button key={s.id} onClick={() => setOpen(i)} className="group relative aspect-[9/16] overflow-hidden rounded-xl border border-accent-500/30 bg-surface-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={proxied(s.thumbnail)} alt="" className="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
             <span className="absolute bottom-1 start-1 rounded bg-black/60 px-1.5 text-[10px] text-white">
@@ -43,7 +43,7 @@ export function StoryViewer({ stories, downloadable }: { stories: Story[]; downl
           <div className="relative aspect-[9/16] h-[85vh] max-w-full overflow-hidden rounded-2xl bg-black" onClick={(e) => e.stopPropagation()}>
             <div className="absolute inset-x-2 top-2 z-10 flex gap-1">
               {stories.map((_, i) => (
-                <div key={i} className="h-1 flex-1 overflow-hidden rounded bg-white/25">
+                <div key={i} className="h-1 flex-1 overflow-hidden rounded bg-white/40">
                   <div className="h-full bg-white" style={{ width: i < open ? "100%" : i === open ? `${progress}%` : "0%" }} />
                 </div>
               ))}
@@ -57,7 +57,7 @@ export function StoryViewer({ stories, downloadable }: { stories: Story[]; downl
             <button className="absolute inset-y-0 start-0 w-1/3" aria-label="prev" onClick={() => setOpen(Math.max(0, open - 1))} />
             <button className="absolute inset-y-0 end-0 w-1/3" aria-label="next" onClick={() => setProgress(100)} />
             {downloadable && (
-              <a href={proxied(stories[open].url)} download className="btn-gold btn-sm absolute bottom-4 start-1/2 z-10 -translate-x-1/2 rtl:translate-x-1/2">
+              <a href={proxied(stories[open].url)} download className="btn-primary btn-sm absolute bottom-4 start-1/2 z-10 -translate-x-1/2 rtl:translate-x-1/2">
                 ⬇ {t.post.download}
               </a>
             )}

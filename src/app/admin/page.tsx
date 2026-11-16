@@ -8,7 +8,7 @@ import { date, timeAgo } from "@/lib/format";
 import { getDict } from "@/lib/i18n/server";
 import { env, billingMode } from "@/lib/env";
 
-export const metadata = buildMetadata({ title: "Admin | Wahm Social", noindex: true });
+export const metadata = buildMetadata({ title: "Admin | Frostly", noindex: true });
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
@@ -22,7 +22,7 @@ export default async function AdminPage() {
   const c = cache.stats();
   return (
     <div className="container-w py-10">
-      <h1 className="mb-6 text-3xl font-extrabold text-white">{t.nav.admin}</h1>
+      <h1 className="mb-6 text-3xl font-extrabold text-ink">{t.nav.admin}</h1>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         <Stat label="Users" value={users.length} />
         <Stat label="Paid" value={users.filter((u) => u.plan !== "free").length} />
@@ -38,35 +38,35 @@ export default async function AdminPage() {
       </div>
       <div className="mt-8 grid gap-4 lg:grid-cols-2">
         <div className="card p-6">
-          <h2 className="mb-3 font-bold text-white">Recent users</h2>
+          <h2 className="mb-3 font-bold text-ink">Recent users</h2>
           <table className="w-full text-sm">
             <tbody>
               {users
                 .slice(-15)
                 .reverse()
                 .map((u) => (
-                  <tr key={u.id} className="border-b border-white/[0.05]">
-                    <td className="py-2 text-slate-200" dir="ltr">
+                  <tr key={u.id} className="border-b border-line">
+                    <td className="py-2 text-ink-2" dir="ltr">
                       {u.email}
                     </td>
                     <td className="py-2">
                       <Badge tone={u.plan === "free" ? "default" : "gold"}>{u.plan}</Badge>
                     </td>
-                    <td className="py-2 text-slate-400">{date(u.createdAt, locale)}</td>
+                    <td className="py-2 text-ink-3">{date(u.createdAt, locale)}</td>
                   </tr>
                 ))}
             </tbody>
           </table>
         </div>
         <div className="card p-6">
-          <h2 className="mb-3 font-bold text-white">Recent searches</h2>
+          <h2 className="mb-3 font-bold text-ink">Recent searches</h2>
           <ul className="space-y-1 text-sm">
             {Searches.recent(15).map((s, i) => (
-              <li key={i} className="flex justify-between border-b border-white/[0.05] py-1.5">
-                <span className="text-slate-200" dir="ltr">
+              <li key={i} className="flex justify-between border-b border-line py-1.5">
+                <span className="text-ink-2" dir="ltr">
                   {s.platform}:@{s.username}
                 </span>
-                <span className="text-slate-500">{timeAgo(s.at, locale)}</span>
+                <span className="text-ink-4">{timeAgo(s.at, locale)}</span>
               </li>
             ))}
           </ul>

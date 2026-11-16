@@ -8,7 +8,7 @@ import { hasFeature, planOf } from "@/lib/plans";
 import { isPlatform, type Platform } from "@/lib/platforms/types";
 
 export const metadata = buildMetadata({
-  title: "مقارنة حسابات تيك توك وانستقرام | Wahm Compare",
+  title: "مقارنة حسابات تيك توك وانستقرام | Frostly Compare",
   description: "قارن المتابعين ومعدل التفاعل ونشاط النشر بين عدة حسابات تيك توك وانستقرام جنباً إلى جنب.",
   path: "/compare",
 });

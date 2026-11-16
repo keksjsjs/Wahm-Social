@@ -2,7 +2,7 @@ import { getDict } from "@/lib/i18n/server";
 import { buildMetadata } from "@/lib/seo";
 import { PageHeader, Badge, ProBadge } from "@/components/ui";
 
-export const metadata = buildMetadata({ title: "Wahm Social API — Developer docs", path: "/api-docs", description: "REST API for public TikTok & Instagram profile data, posts, analytics and media downloads." });
+export const metadata = buildMetadata({ title: "Frostly API — Developer docs", path: "/api-docs", description: "REST API for public TikTok & Instagram profile data, posts, analytics and media downloads." });
 
 const ENDPOINTS: { method: string; path: string; desc: string; auth?: "pro" | "business" | "user"; example?: string }[] = [
   { method: "GET", path: "/api/profile/{platform}/{username}", desc: "Public profile (counts, bio, avatar, verified).", example: "/api/profile/tiktok/khaby.lame" },
@@ -24,14 +24,14 @@ export default function ApiDocs() {
   const { t } = getDict();
   return (
     <div className="container-w max-w-5xl pb-10">
-      <PageHeader title="Wahm Social API" subtitle={t.features.analytics[1]} eyebrow={<Badge tone="gold">REST · JSON</Badge>} />
-      <div className="card mb-6 p-6 text-sm leading-7 text-slate-300" dir="ltr">
+      <PageHeader title="Frostly API" subtitle={t.features.analytics[1]} eyebrow={<Badge tone="gold">REST · JSON</Badge>} />
+      <div className="card mb-6 p-6 text-sm leading-7 text-ink-2" dir="ltr">
         <p>
-          All responses use the envelope <code className="text-gold-300">{`{ ok, source: "live"|"cache"|"demo", fetchedAt, data }`}</code> or{" "}
-          <code className="text-gold-300">{`{ ok: false, error: { code, message } }`}</code>.
+          All responses use the envelope <code className="text-accent-600 dark:text-accent-300">{`{ ok, source: "live"|"cache"|"demo", fetchedAt, data }`}</code> or{" "}
+          <code className="text-accent-600 dark:text-accent-300">{`{ ok: false, error: { code, message } }`}</code>.
         </p>
         <p className="mt-2">
-          Authenticate server-to-server with the <code className="text-gold-300">x-api-key</code> header (Business plan). Browser sessions use the secure session cookie.
+          Authenticate server-to-server with the <code className="text-accent-600 dark:text-accent-300">x-api-key</code> header (Business plan). Browser sessions use the secure session cookie.
         </p>
         <p className="mt-2">Error codes: not_found, private_account, blocked, rate_limited, invalid_input, pro_required, unauthorized, upstream_error.</p>
       </div>
@@ -39,18 +39,18 @@ export default function ApiDocs() {
         {ENDPOINTS.map((e) => (
           <div key={e.path + e.method} className="card flex flex-col gap-2 p-4 sm:flex-row sm:items-center">
             <span className="w-32 shrink-0 font-mono text-xs font-bold text-emerald-300">{e.method}</span>
-            <code className="flex-1 break-all text-sm text-white">{e.path}</code>
-            <span className="text-sm text-slate-400 sm:w-80">{e.desc}</span>
+            <code className="flex-1 break-all text-sm text-ink">{e.path}</code>
+            <span className="text-sm text-ink-3 sm:w-80">{e.desc}</span>
             {e.auth && <ProBadge label={e.auth.toUpperCase()} />}
             {e.example && (
-              <a href={e.example} target="_blank" className="text-xs text-gold-300 hover:underline">
+              <a href={e.example} target="_blank" className="text-xs text-accent-600 dark:text-accent-300 hover:underline">
                 try ↗
               </a>
             )}
           </div>
         ))}
       </div>
-      <pre className="card mt-6 overflow-x-auto p-5 text-xs text-slate-300" dir="ltr">{`curl -H "x-api-key: wahm_xxx" https://YOUR-DOMAIN/api/profile/tiktok/khaby.lame`}</pre>
+      <pre className="card mt-6 overflow-x-auto p-5 text-xs text-ink-2" dir="ltr">{`curl -H "x-api-key: wahm_xxx" https://YOUR-DOMAIN/api/profile/tiktok/khaby.lame`}</pre>
     </div>
   );
 }

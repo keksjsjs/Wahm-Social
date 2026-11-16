@@ -1,3 +1,4 @@
+import "server-only";
 /** Daily quota enforcement per user (by plan) or anonymous IP. */
 import { Usage, type User } from "./db";
 import { ANON_LIMITS, planOf } from "../plans";

@@ -5,7 +5,7 @@ import { buildMetadata } from "@/lib/seo";
 import { PageHeader } from "@/components/ui";
 
 export const metadata = buildMetadata({
-  title: "مدونة وهم — نصائح تيك توك وانستقرام | Wahm Blog",
+  title: "مدونة فروستلي — نصائح تيك توك وانستقرام | Frostly Blog",
   description: "مقالات عن النمو على تيك توك وانستقرام، معدل التفاعل، أفضل أوقات النشر، والتحميل الآمن.",
   path: "/blog",
 });
@@ -25,9 +25,9 @@ export default function BlogIndex() {
                 </span>
               ))}
             </div>
-            <h2 className="mt-4 text-lg font-bold leading-8 text-white">{a.title[locale]}</h2>
-            <p className="mt-2 flex-1 text-sm leading-7 text-slate-400">{a.excerpt[locale]}</p>
-            <div className="mt-4 text-xs text-gold-400">{a.date}</div>
+            <h2 className="mt-4 text-lg font-bold leading-8 text-ink">{a.title[locale]}</h2>
+            <p className="mt-2 flex-1 text-sm leading-7 text-ink-3">{a.excerpt[locale]}</p>
+            <div className="mt-4 text-xs text-accent-500 dark:text-accent-400">{a.date}</div>
           </Link>
         ))}
       </div>

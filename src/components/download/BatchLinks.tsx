@@ -44,7 +44,7 @@ export function BatchLinks() {
         onChange={(e) => setText(e.target.value)}
       />
       <div className="mt-3 flex items-center gap-3">
-        <button className="btn-gold" onClick={run} disabled={busy || !text.trim()}>
+        <button className="btn-primary" onClick={run} disabled={busy || !text.trim()}>
           {busy ? t.states.loading : t.download.go}
         </button>
         {err && <span className="text-sm text-rose-400">{err}</span>}
@@ -52,7 +52,7 @@ export function BatchLinks() {
       {items.length > 0 && (
         <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-6">
           {items.map((it, i) => (
-            <a key={it.id + i} href={it.download ?? "#"} className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-white/10">
+            <a key={it.id + i} href={it.download ?? "#"} className="group relative aspect-[3/4] overflow-hidden rounded-lg border border-line">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={proxied(it.cover)} alt="" className="h-full w-full object-cover" />
               <span className="absolute inset-x-0 bottom-0 bg-black/60 py-1 text-center text-[11px] text-white">⬇ {it.type}</span>

@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const r = parseRoute(params.platform, params.username);
   if (!r) return {};
   const p = await loadProfile(r.platform, r.username);
-  if (!p.ok) return buildMetadata({ title: `@${r.username} | Wahm Social`, path: `/${r.platform}/${r.username}`, noindex: true });
+  if (!p.ok) return buildMetadata({ title: `@${r.username} | Frostly`, path: `/${r.platform}/${r.username}`, noindex: true });
   return { ...profileMetadata(p.value.data), robots: p.value.source === "demo" ? { index: false } : undefined };
 }
 
@@ -40,7 +40,7 @@ export default async function ProfileLayout({ params, children }: { params: Para
             data={[
               jsonLdProfile(res.value.data),
               jsonLdBreadcrumbs([
-                { name: "Wahm Social", path: "/" },
+                { name: "Frostly", path: "/" },
                 { name: r.platform === "tiktok" ? "TikTok" : "Instagram", path: `/explore?p=${r.platform}` },
                 { name: `@${r.username}`, path: `/${r.platform}/${r.username}` },
               ]),

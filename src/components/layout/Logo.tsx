@@ -1,19 +1,37 @@
 import Link from "next/link";
 
+/** Frostly mark: a faceted ice-crystal inside a frosted rounded tile. */
 export function LogoMark({ size = 36 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
       <defs>
-        <linearGradient id="wg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f3dc9b" />
-          <stop offset=".5" stopColor="#d4a944" />
-          <stop offset="1" stopColor="#8f6a1f" />
+        <linearGradient id="fr-bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#7dc4ff" />
+          <stop offset=".55" stopColor="#6378f6" />
+          <stop offset="1" stopColor="#a78bfa" />
+        </linearGradient>
+        <linearGradient id="fr-shine" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff" stopOpacity=".55" />
+          <stop offset="1" stopColor="#fff" stopOpacity="0" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="16" fill="#0a1228" />
-      <rect x="1" y="1" width="62" height="62" rx="15" fill="none" stroke="url(#wg)" strokeOpacity=".5" />
-      <path d="M12 18l8 28 6-18 6 18 6-18 6 18 8-28" fill="none" stroke="url(#wg)" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <rect width="64" height="64" rx="18" fill="url(#fr-bg)" />
+      <rect x="3" y="3" width="58" height="29" rx="15" fill="url(#fr-shine)" />
+      <g stroke="#fff" strokeWidth="3.4" strokeLinecap="round" fill="none">
+        <path d="M32 13v38M15.5 22.5l33 19M15.5 41.5l33-19" />
+        <path d="M27 16l5 4 5-4M27 48l5-4 5 4M17 28.5l6.2-.9-2.3-5.8M47 35.5l-6.2.9 2.3 5.8M17 35.5l6.2.9-2.3 5.8M47 28.5l-6.2-.9 2.3-5.8" strokeWidth="2.6" />
+      </g>
+      <circle cx="32" cy="32" r="4.2" fill="#fff" />
     </svg>
+  );
+}
+
+export function Wordmark() {
+  return (
+    <span className="text-xl font-extrabold tracking-tight">
+      <span className="accent-text">Frost</span>
+      <span className="text-ink">ly</span>
+    </span>
   );
 }
 
@@ -21,9 +39,7 @@ export function Logo({ label }: { label: string }) {
   return (
     <Link href="/" className="flex items-center gap-2.5" aria-label={label}>
       <LogoMark />
-      <span className="text-lg font-extrabold tracking-tight">
-        <span className="gold-text">Wahm</span> <span className="text-white">Social</span>
-      </span>
+      <Wordmark />
     </Link>
   );
 }

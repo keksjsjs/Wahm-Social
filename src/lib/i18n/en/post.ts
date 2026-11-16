@@ -1,0 +1,17 @@
+export const post = {
+    views: "Views",
+    likes: "Likes",
+    comments: "Comments",
+    shares: "Shares",
+    saves: "Saves",
+    download: "Download",
+    downloadVideo: "Download video",
+    downloadImage: "Download image",
+    downloadAudio: "Download audio",
+    noWatermark: "No watermark",
+    hashtags: "Hashtags",
+    music: "Sound",
+    published: "Published",
+    openOriginal: "Open original post",
+    back: "Back to profile",
+  };

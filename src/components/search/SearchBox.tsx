@@ -34,7 +34,7 @@ export function SearchBox({ initialPlatform = "tiktok", size = "lg", initialQuer
             onClick={() => setPlatform(p)}
             className={cx(
               "flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold transition",
-              platform === p ? "border-gold-400/70 bg-gold-500/15 text-gold-200" : "border-white/10 text-slate-400 hover:text-white",
+              platform === p ? "border-accent-400/70 bg-accent-500/15 text-accent-600 dark:text-accent-200" : "border-line text-ink-3 hover:text-ink",
             )}
             aria-pressed={platform === p}
           >
@@ -43,24 +43,24 @@ export function SearchBox({ initialPlatform = "tiktok", size = "lg", initialQuer
           </button>
         ))}
       </div>
-      <div className={cx("card flex items-center gap-2 p-2 shadow-gold", size === "lg" && "p-2.5")}>
-        <span className="ps-3 text-lg text-gold-400">@</span>
+      <div className={cx("card flex items-center gap-2 p-2 shadow-glow", size === "lg" && "p-2.5")}>
+        <span className="ps-3 text-lg text-accent-500 dark:text-accent-400">@</span>
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder={t.search.placeholder}
-          className="min-w-0 flex-1 bg-transparent py-3 text-base text-white placeholder:text-slate-500 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent py-3 text-base text-ink placeholder:text-ink-4 focus:outline-none"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
           dir="ltr"
           aria-label={t.search.placeholder}
         />
-        <button className="btn-gold px-6 py-3" disabled={busy}>
+        <button className="btn-primary px-6 py-3" disabled={busy}>
           {busy ? "…" : t.search.button}
         </button>
       </div>
-      <p className={cx("mt-2 text-center text-xs", err ? "text-rose-400" : "text-slate-500")}>{err || t.search.hint}</p>
+      <p className={cx("mt-2 text-center text-xs", err ? "text-rose-400" : "text-ink-4")}>{err || t.search.hint}</p>
     </form>
   );
 }

@@ -1,0 +1,18 @@
+export const nav = {
+    home: "Home",
+    explore: "Explore",
+    download: "Download center",
+    stories: "Stories",
+    analytics: "Analytics",
+    compare: "Compare",
+    watchlist: "Watchlist",
+    pricing: "Pricing",
+    blog: "Blog",
+    docs: "Guide",
+    api: "API",
+    login: "Sign in",
+    register: "Sign up",
+    account: "Account",
+    logout: "Sign out",
+    admin: "Admin",
+  };

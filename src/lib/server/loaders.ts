@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Request-scoped data loaders for server components. `cache()` de-duplicates
  * calls between generateMetadata, layouts and pages within one request.

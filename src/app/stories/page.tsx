@@ -5,7 +5,7 @@ import { QuickJump } from "@/components/search/QuickJump";
 import { Faq } from "@/components/content/Faq";
 
 export const metadata = buildMetadata({
-  title: "عارض ستوري انستقرام العامة وتحميلها | Wahm Story Viewer",
+  title: "عارض ستوري انستقرام العامة وتحميلها | Frostly Story Viewer",
   description: "شاهد وحمّل ستوري انستقرام للحسابات العامة فقط بسهولة. لا نصل للحسابات الخاصة ولا نطلب كلمة المرور.",
   path: "/stories",
 });

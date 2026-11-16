@@ -1,10 +1,10 @@
 /** Bilingual static legal/info pages (markdown). */
 export const PAGES: Record<string, { title: { ar: string; en: string }; body: { ar: string; en: string } }> = {
   about: {
-    title: { ar: "عن وهم سوشال", en: "About Wahm Social" },
+    title: { ar: "عن فروستلي", en: "About Frostly" },
     body: {
-      ar: `## من نحن\nوهم سوشال منصة عربية أولاً من **Wahm (@iwahm)** لتحليل الحسابات العامة على تيك توك وانستقرام وتحميل المحتوى العام بسهولة.\n\n## مبادئنا\n- البيانات العامة فقط — لا تجاوز للخصوصية.\n- لا نطلب كلمة مرور حسابك أبداً.\n- شفافية كاملة: نوسم البيانات التجريبية والمخزنة بوضوح.\n\n## التقنية\nبنينا المنصة على Next.js مع طبقة خدمات لكل منصة، ذاكرة مؤقتة، حدود استخدام، ومصادقة JWT.`,
-      en: `## Who we are\nWahm Social is an Arabic-first platform by **Wahm (@iwahm)** for analyzing public TikTok and Instagram accounts and saving public content easily.\n\n## Principles\n- Public data only — no privacy bypass.\n- We never ask for your account password.\n- Full transparency: demo and cached data are clearly labelled.\n\n## Technology\nBuilt on Next.js with per-platform service adapters, caching, rate limits and JWT auth.`,
+      ar: `## من نحن\nفروستلي منصة عربية أولاً من **Wahm (@iwahm)** لتحليل الحسابات العامة على تيك توك وانستقرام وتحميل المحتوى العام بسهولة.\n\n## مبادئنا\n- البيانات العامة فقط — لا تجاوز للخصوصية.\n- لا نطلب كلمة مرور حسابك أبداً.\n- شفافية كاملة: نوسم البيانات التجريبية والمخزنة بوضوح.\n\n## التقنية\nبنينا المنصة على Next.js مع طبقة خدمات لكل منصة، ذاكرة مؤقتة، حدود استخدام، ومصادقة JWT.`,
+      en: `## Who we are\nFrostly is an Arabic-first platform by **Wahm (@iwahm)** for analyzing public TikTok and Instagram accounts and saving public content easily.\n\n## Principles\n- Public data only — no privacy bypass.\n- We never ask for your account password.\n- Full transparency: demo and cached data are clearly labelled.\n\n## Technology\nBuilt on Next.js with per-platform service adapters, caching, rate limits and JWT auth.`,
     },
   },
   privacy: {
@@ -17,8 +17,8 @@ export const PAGES: Record<string, { title: { ar: string; en: string }; body: { 
   terms: {
     title: { ar: "شروط الاستخدام", en: "Terms of Service" },
     body: {
-      ar: `## الاستخدام المقبول\n- استخدم الخدمة للمحتوى العام فقط وللأغراض الشخصية أو التحليلية.\n- لا تعِد نشر محتوى الآخرين دون إذنهم.\n- يُمنع استخدام الخدمة للتحرش أو التتبع المؤذي.\n\n## الاشتراكات\n- تتجدد اشتراكات برو تلقائياً ويمكن إلغاؤها في أي وقت.\n- تظل الميزات فعالة حتى نهاية الفترة المدفوعة.\n\n## إخلاء مسؤولية\nوهم سوشال غير تابع لتيك توك أو انستقرام. توفر البيانات يعتمد على المنصات نفسها.`,
-      en: `## Acceptable use\n- Use the service for public content only, for personal or analytical purposes.\n- Don't repost others' content without permission.\n- Harassment or harmful tracking is prohibited.\n\n## Subscriptions\n- Pro renews automatically and can be cancelled any time.\n- Features stay active until the end of the paid period.\n\n## Disclaimer\nWahm Social is not affiliated with TikTok or Instagram. Data availability depends on the platforms.`,
+      ar: `## الاستخدام المقبول\n- استخدم الخدمة للمحتوى العام فقط وللأغراض الشخصية أو التحليلية.\n- لا تعِد نشر محتوى الآخرين دون إذنهم.\n- يُمنع استخدام الخدمة للتحرش أو التتبع المؤذي.\n\n## الاشتراكات\n- تتجدد اشتراكات برو تلقائياً ويمكن إلغاؤها في أي وقت.\n- تظل الميزات فعالة حتى نهاية الفترة المدفوعة.\n\n## إخلاء مسؤولية\nفروستلي غير تابع لتيك توك أو انستقرام. توفر البيانات يعتمد على المنصات نفسها.`,
+      en: `## Acceptable use\n- Use the service for public content only, for personal or analytical purposes.\n- Don't repost others' content without permission.\n- Harassment or harmful tracking is prohibited.\n\n## Subscriptions\n- Pro renews automatically and can be cancelled any time.\n- Features stay active until the end of the paid period.\n\n## Disclaimer\nFrostly is not affiliated with TikTok or Instagram. Data availability depends on the platforms.`,
     },
   },
   contact: {
@@ -37,48 +37,73 @@ export const PAGES: Record<string, { title: { ar: string; en: string }; body: { 
   },
 };
 
-/** Programmatic SEO landing pages under /tools/[slug]. */
-export const TOOLS: Record<string, { title: { ar: string; en: string }; desc: { ar: string; en: string }; platform: "tiktok" | "instagram"; mode: "download" | "profile" | "stories" | "analytics" }> = {
-  "tiktok-downloader": {
-    platform: "tiktok",
-    mode: "download",
-    title: { ar: "تحميل فيديو تيك توك بدون علامة مائية", en: "TikTok Video Downloader — No Watermark" },
-    desc: { ar: "الصق رابط فيديو تيك توك وحمله بجودة HD بدون شعار، مجاناً.", en: "Paste a TikTok link and save it in HD without the logo, free." },
-  },
-  "instagram-downloader": {
-    platform: "instagram",
-    mode: "download",
-    title: { ar: "تحميل ريلز وصور انستقرام", en: "Instagram Reels & Photo Downloader" },
-    desc: { ar: "حمّل ريلز وصور ومنشورات انستقرام العامة بأعلى جودة.", en: "Download public Instagram reels, photos and posts in top quality." },
-  },
-  "tiktok-profile-viewer": {
-    platform: "tiktok",
-    mode: "profile",
-    title: { ar: "عارض حسابات تيك توك", en: "TikTok Profile Viewer" },
-    desc: { ar: "اعرض أي حساب تيك توك عام: المتابعين، الإعجابات، وأحدث الفيديوهات.", en: "View any public TikTok profile: followers, likes and latest videos." },
-  },
-  "instagram-profile-viewer": {
-    platform: "instagram",
-    mode: "profile",
-    title: { ar: "عارض حسابات انستقرام", en: "Instagram Profile Viewer" },
-    desc: { ar: "اعرض حسابات انستقرام العامة والمنشورات والإحصائيات.", en: "View public Instagram profiles, posts and stats." },
-  },
-  "instagram-story-viewer": {
-    platform: "instagram",
-    mode: "stories",
-    title: { ar: "عارض ستوري انستقرام العامة", en: "Instagram Public Story Viewer" },
-    desc: { ar: "شاهد ستوري الحسابات العامة وحمّلها.", en: "Watch and save public account stories." },
-  },
-  "tiktok-engagement-calculator": {
-    platform: "tiktok",
-    mode: "analytics",
-    title: { ar: "حاسبة معدل التفاعل في تيك توك", en: "TikTok Engagement Rate Calculator" },
-    desc: { ar: "احسب معدل التفاعل لأي حساب تيك توك عام في ثوانٍ.", en: "Calculate the engagement rate of any public TikTok account in seconds." },
-  },
-  "instagram-engagement-calculator": {
-    platform: "instagram",
-    mode: "analytics",
-    title: { ar: "حاسبة معدل التفاعل في انستقرام", en: "Instagram Engagement Rate Calculator" },
-    desc: { ar: "احسب معدل التفاعل لأي حساب انستقرام عام.", en: "Calculate the engagement rate of any public Instagram account." },
-  },
+/** Programmatic SEO landing pages under /tools/[slug] — each targets a high-volume query. */
+export type ToolMode = "download" | "profile" | "stories" | "analytics";
+export interface Tool {
+  title: { ar: string; en: string };
+  desc: { ar: string; en: string };
+  platform: "tiktok" | "instagram";
+  mode: ToolMode;
+  keywords: string[];
+}
+
+const T = (platform: Tool["platform"], mode: ToolMode, title: Tool["title"], desc: Tool["desc"], keywords: string[]): Tool => ({ platform, mode, title, desc, keywords });
+
+export const TOOLS: Record<string, Tool> = {
+  "tiktok-downloader": T("tiktok", "download",
+    { ar: "تحميل فيديو تيك توك بدون علامة مائية", en: "TikTok Downloader — Download TikTok Videos Without Watermark" },
+    { ar: "الصق رابط فيديو تيك توك وحمله بجودة HD بدون شعار، مجاناً وبدون تسجيل — على الجوال والكمبيوتر.", en: "Paste a TikTok link and save it in HD without the watermark — free, no login, on iPhone, Android and PC." },
+    ["tiktok downloader", "download tiktok without watermark", "tiktok video downloader", "تحميل فيديو تيك توك", "تحميل تيك توك بدون علامة مائية"]),
+  "tiktok-mp3-downloader": T("tiktok", "download",
+    { ar: "تحميل صوت تيك توك MP3", en: "TikTok MP3 Downloader — TikTok to MP3" },
+    { ar: "حوّل أي فيديو تيك توك إلى ملف صوتي MP3 واحفظ الأغاني والأصوات الرائجة.", en: "Convert any TikTok to MP3 and save trending sounds and songs." },
+    ["tiktok mp3", "tiktok to mp3", "tiktok audio downloader", "تحميل صوت تيك توك", "تحويل تيك توك mp3"]),
+  "tiktok-photo-downloader": T("tiktok", "download",
+    { ar: "تحميل صور وسلايدشو تيك توك", en: "TikTok Photo & Slideshow Downloader" },
+    { ar: "حمّل صور منشورات تيك توك (السلايدشو) بجودة كاملة.", en: "Download every photo from TikTok slideshow posts in full quality." },
+    ["tiktok slideshow downloader", "tiktok photo download", "تحميل صور تيك توك"]),
+  "instagram-downloader": T("instagram", "download",
+    { ar: "تحميل من انستقرام — ريلز وصور وفيديو", en: "Instagram Downloader — Reels, Photos & Videos" },
+    { ar: "حمّل ريلز وصور ومنشورات انستقرام العامة بأعلى جودة، مجاناً وبدون تسجيل.", en: "Download public Instagram reels, photos and posts in top quality — free, no login." },
+    ["instagram downloader", "instagram video downloader", "تحميل من انستقرام", "تحميل فيديو انستا"]),
+  "instagram-reels-downloader": T("instagram", "download",
+    { ar: "تحميل ريلز انستقرام", en: "Instagram Reels Downloader" },
+    { ar: "الصق رابط الريلز وحمّله MP4 بجودة عالية.", en: "Paste a Reel link and save it as a high-quality MP4." },
+    ["instagram reels downloader", "download instagram reels", "reels download", "تحميل ريلز", "تنزيل ريلز انستا"]),
+  "instagram-photo-downloader": T("instagram", "download",
+    { ar: "تحميل صور انستقرام", en: "Instagram Photo Downloader" },
+    { ar: "احفظ صور منشورات انستقرام العامة بدقتها الأصلية.", en: "Save public Instagram post photos in original resolution." },
+    ["instagram photo downloader", "save instagram photo", "حفظ صور انستقرام"]),
+  "tiktok-profile-viewer": T("tiktok", "profile",
+    { ar: "عارض حسابات تيك توك — البحث عن حساب", en: "TikTok Profile Viewer & Account Lookup" },
+    { ar: "اعرض أي حساب تيك توك عام بدون تسجيل: المتابعين، الإعجابات، وأحدث الفيديوهات.", en: "View any public TikTok profile without an account: followers, likes and latest videos." },
+    ["tiktok profile viewer", "tiktok viewer", "tiktok account lookup", "عرض حساب تيك توك", "البحث عن حساب تيك توك"]),
+  "instagram-profile-viewer": T("instagram", "profile",
+    { ar: "عارض حسابات انستقرام", en: "Instagram Profile Viewer" },
+    { ar: "اعرض حسابات انستقرام العامة، عدد المتابعين، والإحصائيات بدون تسجيل.", en: "View public Instagram profiles, follower counts and stats without logging in." },
+    ["instagram profile viewer", "insta viewer", "view instagram without account", "عرض حساب انستقرام"]),
+  "instagram-profile-picture-viewer": T("instagram", "profile",
+    { ar: "عرض وتكبير صورة بروفايل انستقرام", en: "Instagram Profile Picture Viewer (HD)" },
+    { ar: "شاهد صورة البروفايل لأي حساب انستقرام عام بحجم كبير واحفظها.", en: "See and save any public Instagram profile picture in large size." },
+    ["instagram profile picture viewer", "insta dp viewer", "تكبير صورة بروفايل انستقرام"]),
+  "instagram-story-viewer": T("instagram", "stories",
+    { ar: "مشاهدة وتحميل ستوري انستقرام العامة", en: "Instagram Story Viewer & Downloader" },
+    { ar: "شاهد ستوري الحسابات العامة وحمّلها — الحسابات الخاصة غير مدعومة احتراماً للخصوصية.", en: "Watch and save stories from public accounts — private accounts are never supported." },
+    ["instagram story viewer", "instagram story downloader", "story saver", "مشاهدة ستوري انستقرام", "تحميل ستوري انستا"]),
+  "tiktok-engagement-calculator": T("tiktok", "analytics",
+    { ar: "حاسبة معدل التفاعل في تيك توك", en: "TikTok Engagement Rate Calculator" },
+    { ar: "احسب معدل التفاعل لأي حساب تيك توك عام في ثوانٍ.", en: "Calculate the engagement rate of any public TikTok account in seconds." },
+    ["tiktok engagement rate calculator", "tiktok analytics", "حساب معدل التفاعل تيك توك"]),
+  "instagram-engagement-calculator": T("instagram", "analytics",
+    { ar: "حاسبة معدل التفاعل في انستقرام", en: "Instagram Engagement Rate Calculator" },
+    { ar: "احسب معدل التفاعل لأي حساب انستقرام عام.", en: "Calculate the engagement rate of any public Instagram account." },
+    ["instagram engagement rate calculator", "instagram analytics", "حساب معدل التفاعل انستقرام"]),
+  "tiktok-money-calculator": T("tiktok", "analytics",
+    { ar: "حاسبة أرباح تيك توك — كم يربح المؤثر؟", en: "TikTok Money Calculator — Influencer Earnings" },
+    { ar: "قدّر سعر الإعلان وأرباح أي صانع محتوى على تيك توك من المتابعين والتفاعل.", en: "Estimate sponsored-post pricing and earnings for any TikTok creator from followers and engagement." },
+    ["tiktok money calculator", "influencer earnings calculator", "حاسبة أرباح تيك توك", "كم يربح المؤثر"]),
+  "tiktok-follower-count": T("tiktok", "profile",
+    { ar: "عدد متابعين تيك توك — عداد المتابعين", en: "TikTok Follower Count Checker" },
+    { ar: "اعرف عدد متابعين وإعجابات أي حساب تيك توك عام الآن.", en: "Check the follower and like count of any public TikTok account right now." },
+    ["tiktok follower count", "live follower count tiktok", "عدد متابعين تيك توك", "عداد متابعين"]),
 };

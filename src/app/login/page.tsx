@@ -4,7 +4,7 @@ import { AuthForm } from "@/components/auth/AuthForm";
 import { buildMetadata } from "@/lib/seo";
 import { currentUser } from "@/lib/server/auth";
 
-export const metadata = buildMetadata({ title: "login | Wahm Social", path: "/login", noindex: true });
+export const metadata = buildMetadata({ title: "login | Frostly", path: "/login", noindex: true });
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

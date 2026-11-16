@@ -10,5 +10,5 @@ export function SourceBadge({ source, t }: { source: DataSource; t: Dict }) {
 
 export function NoticeBar({ notice }: { notice?: string }) {
   if (!notice) return null;
-  return <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{notice}</div>;
+  return <div className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-400/10 px-4 py-3 text-sm text-amber-700 backdrop-blur-xl dark:text-amber-200">{notice}</div>;
 }

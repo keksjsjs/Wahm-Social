@@ -34,19 +34,19 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
 
   return (
     <form onSubmit={submit} className="card mx-auto w-full max-w-md space-y-4 p-8">
-      <h1 className="text-center text-2xl font-extrabold text-white">{mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}</h1>
+      <h1 className="text-center text-2xl font-extrabold text-ink">{mode === "login" ? t.auth.loginTitle : t.auth.registerTitle}</h1>
       {mode === "register" && (
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-400">{t.auth.name}</span>
+          <span className="mb-1 block text-sm text-ink-3">{t.auth.name}</span>
           <input className="input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} autoComplete="name" />
         </label>
       )}
       <label className="block">
-        <span className="mb-1 block text-sm text-slate-400">{t.auth.email}</span>
+        <span className="mb-1 block text-sm text-ink-3">{t.auth.email}</span>
         <input className="input" type="email" dir="ltr" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="email" />
       </label>
       <label className="block">
-        <span className="mb-1 block text-sm text-slate-400">{t.auth.password}</span>
+        <span className="mb-1 block text-sm text-ink-3">{t.auth.password}</span>
         <input
           className="input"
           type="password"
@@ -60,7 +60,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       </label>
       {err && <p className="text-sm text-rose-400">{err}</p>}
       {info && <p className="text-sm text-emerald-300">{info}</p>}
-      <button className="btn-gold w-full" disabled={busy}>
+      <button className="btn-primary w-full" disabled={busy}>
         {busy ? "…" : mode === "login" ? t.auth.submitLogin : t.auth.submitRegister}
       </button>
       {mode === "login" && (
@@ -68,9 +68,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           ✉ {t.auth.magic}
         </button>
       )}
-      <p className="text-center text-sm text-slate-400">
+      <p className="text-center text-sm text-ink-3">
         {mode === "login" ? t.auth.noAccount : t.auth.haveAccount}{" "}
-        <Link href={mode === "login" ? "/register" : "/login"} className="text-gold-300 hover:underline">
+        <Link href={mode === "login" ? "/register" : "/login"} className="text-accent-600 dark:text-accent-300 hover:underline">
           {mode === "login" ? t.nav.register : t.nav.login}
         </Link>
       </p>

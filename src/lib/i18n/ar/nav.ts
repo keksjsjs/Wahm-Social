@@ -1,0 +1,18 @@
+export const nav = {
+    home: "الرئيسية",
+    explore: "استكشف",
+    download: "مركز التحميل",
+    stories: "الستوري",
+    analytics: "التحليلات",
+    compare: "المقارنة",
+    watchlist: "المراقبة",
+    pricing: "الأسعار",
+    blog: "المدونة",
+    docs: "الدليل",
+    api: "API",
+    login: "دخول",
+    register: "حساب جديد",
+    account: "حسابي",
+    logout: "خروج",
+    admin: "لوحة الإدارة",
+  };

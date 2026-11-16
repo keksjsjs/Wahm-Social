@@ -8,6 +8,8 @@ export const GET = handler(async (req: Request, { params }: { params: { platform
   burstGuard(req);
   const platform = parsePlatform(params.platform);
   const username = parseUsername(params.username);
-  const kind = new URL(req.url).searchParams.get("kind") === "following" ? "following" : "followers";
-  return ok(await getConnections(platform, username, kind));
+  const sp = new URL(req.url).searchParams;
+  const kind = sp.get("kind") === "following" ? "following" : "followers";
+  const r = await getConnections(platform, username, kind, sp.get("cursor") ?? undefined);
+  return ok(r.data, r.source, r.notice);
 });

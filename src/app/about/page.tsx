@@ -4,7 +4,7 @@ import { buildMetadata } from "@/lib/seo";
 import { StaticPage } from "@/components/content/StaticPage";
 
 const page = PAGES["about"];
-export const metadata = buildMetadata({ title: `${page.title.ar} | ${page.title.en} — Wahm Social`, path: "/about" });
+export const metadata = buildMetadata({ title: `${page.title.ar} | ${page.title.en} — Frostly`, path: "/about" });
 
 export default function Page() {
   const { locale } = getDict();

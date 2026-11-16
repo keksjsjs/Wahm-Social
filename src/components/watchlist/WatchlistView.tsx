@@ -59,11 +59,11 @@ export function WatchlistView() {
           <option value="instagram">Instagram</option>
         </select>
         <input className="input flex-1" dir="ltr" placeholder="@username" value={add.username} onChange={(e) => setAdd({ ...add, username: e.target.value })} />
-        <button className="btn-gold">+ {t.compare.add}</button>
+        <button className="btn-primary">+ {t.compare.add}</button>
         <button type="button" className="btn-ghost" onClick={() => load(true)} disabled={busy}>
           ↻ {t.watchlist.refresh}
         </button>
-        <span className="self-center text-xs text-slate-500" dir="ltr">
+        <span className="self-center text-xs text-ink-4" dir="ltr">
           {rows?.length ?? 0}/{limit}
         </span>
       </form>
@@ -77,10 +77,10 @@ export function WatchlistView() {
             <div key={r.id} className="card flex items-center gap-4 p-4">
               <Avatar src={r.current?.avatarUrl} alt={r.username} size={56} />
               <div className="min-w-0 flex-1">
-                <Link href={`/${r.platform}/${r.username}`} className="flex items-center gap-1 font-bold text-white hover:text-gold-300" dir="ltr">
+                <Link href={`/${r.platform}/${r.username}`} className="flex items-center gap-1 font-bold text-ink hover:text-accent-300" dir="ltr">
                   <PlatformIcon platform={r.platform} className="h-3.5 w-3.5" />@{r.username}
                 </Link>
-                <div className="text-sm text-slate-300">
+                <div className="text-sm text-ink-2">
                   {compact(r.current?.followers ?? r.lastFollowers, locale)} {t.profile.followers}
                   {r.current && r.current.delta !== 0 && (
                     <span className={r.current.delta > 0 ? "ms-2 text-emerald-400" : "ms-2 text-rose-400"} dir="ltr">
@@ -89,7 +89,7 @@ export function WatchlistView() {
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-ink-4">
                   {t.watchlist.lastCheck}: {timeAgo(r.lastCheckedAt, locale)}
                 </div>
               </div>

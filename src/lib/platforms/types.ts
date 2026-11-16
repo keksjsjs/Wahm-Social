@@ -29,6 +29,10 @@ export interface Profile {
   region?: string;
   language?: string;
   hasStory?: boolean;
+  /** TikTok: 1 = following list visible to everyone. */
+  followingVisibility?: number;
+  /** Profile data came from the platform's public link-preview (limited fields). */
+  preview?: boolean;
   profileUrl: string;
 }
 
@@ -83,10 +87,24 @@ export interface Connection {
   verified: boolean;
 }
 
+export type ConnectionsReason =
+  | "account_private" // the account itself is private → never shown
+  | "hidden_by_user" // the owner hid this list in their privacy settings
+  | "provider_required" // list is public but needs an official API provider to be configured
+  | "login_only" // platform only shows this list to signed-in users
+  | "not_supported";
+
 export interface ConnectionsResult {
   available: boolean;
-  reason?: "private_api" | "account_private" | "hidden_by_user" | "not_supported";
+  reason?: ConnectionsReason;
+  /** "public" when the account owner allows this list to be seen. */
+  visibility: "public" | "hidden" | "private" | "unknown";
+  total?: number;
   items: Connection[];
+  nextCursor?: string | null;
+  provider?: string;
+  /** Deep link to view the list on the platform itself. */
+  platformUrl?: string;
 }
 
 export interface Envelope<T> {
@@ -126,5 +144,4 @@ export interface PlatformAdapter {
   getPosts(username: string, opts?: { limit?: number }): Promise<Post[]>;
   getPost(idOrUrl: string, username?: string): Promise<Post>;
   getStories(username: string): Promise<Story[]>;
-  getConnections(username: string, kind: "followers" | "following"): Promise<ConnectionsResult>;
 }

@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Resolve the concrete CDN URL (+cookies) for a post's media item.
  * TikTok media URLs are bound to the page-request cookies, so results are
@@ -28,19 +29,19 @@ export async function resolveMedia(platform: Platform, ref: string, opts: { auth
     const { post, cookie } = await fetchVideoPage(parsed.username ?? opts.author ?? "i", parsed.id ?? ref);
     if (opts.kind === "audio") {
       if (!post.music?.url) throw new PlatformError("not_found", "No audio for this post", 404);
-      out = { url: post.music.url, cookie, ext: "mp3", filename: `wahm_tiktok_${post.author}_${post.id}_audio.mp3` };
+      out = { url: post.music.url, cookie, ext: "mp3", filename: `frostly_tiktok_${post.author}_${post.id}_audio.mp3` };
     } else {
       const m = post.media[index] ?? post.media[0];
       if (!m) throw new PlatformError("not_found", "No downloadable media", 404);
       const ext = m.type === "video" ? "mp4" : "jpg";
-      out = { url: m.url, cookie, ext, filename: `wahm_tiktok_${post.author}_${post.id}${index ? "_" + index : ""}.${ext}` };
+      out = { url: m.url, cookie, ext, filename: `frostly_tiktok_${post.author}_${post.id}${index ? "_" + index : ""}.${ext}` };
     }
   } else {
     const { data: post } = await getPost("instagram", ref);
     const m = post.media[index] ?? post.media[0];
     if (!m) throw new PlatformError("not_found", "No downloadable media", 404);
     const ext = m.type === "video" ? "mp4" : "jpg";
-    out = { url: m.url, ext, filename: `wahm_instagram_${post.author}_${post.shortcode ?? post.id}${index ? "_" + index : ""}.${ext}` };
+    out = { url: m.url, ext, filename: `frostly_instagram_${post.author}_${post.shortcode ?? post.id}${index ? "_" + index : ""}.${ext}` };
   }
   cache.set(key, out, 5 * 60_000);
   return out;

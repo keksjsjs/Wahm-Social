@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Wahm Social — وهم سوشال",
-    short_name: "Wahm",
+    name: "Frostly — فروستلي",
+    short_name: "Frostly",
     description: "TikTok & Instagram public profile viewer, downloader and analytics",
     start_url: "/",
     display: "standalone",

@@ -38,11 +38,11 @@ export function PostView({ post, t, locale }: { post: Post; t: Dict; locale: Loc
         )}
       </div>
       <div>
-        <Link href={profileHref(post.platform, post.author)} className="inline-flex items-center gap-2 text-sm text-gold-300 hover:underline">
+        <Link href={profileHref(post.platform, post.author)} className="inline-flex items-center gap-2 text-sm text-accent-600 dark:text-accent-300 hover:underline">
           <PlatformIcon platform={post.platform} /> @{post.author} · {t.post.back}
         </Link>
-        <p className="mt-4 whitespace-pre-line text-lg leading-8 text-white">{post.caption || "—"}</p>
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+        <p className="mt-4 whitespace-pre-line text-lg leading-8 text-ink">{post.caption || "—"}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-3">
           {post.createdAt && (
             <span>
               {t.post.published} {date(post.createdAt, locale)}
@@ -54,23 +54,23 @@ export function PostView({ post, t, locale }: { post: Post; t: Dict; locale: Loc
         {stats.length > 0 && (
           <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-5">
             {stats.map((s) => (
-              <div key={s.k} className="rounded-xl border border-white/[0.06] bg-navy-950/50 px-3 py-3 text-center">
-                <div className="text-lg font-black text-white">
+              <div key={s.k} className="rounded-xl border border-line bg-glass px-3 py-3 text-center">
+                <div className="text-lg font-black text-ink">
                   {s.i} {compact(s.v, locale)}
                 </div>
-                <div className="text-[11px] text-slate-400">{s.k}</div>
+                <div className="text-[11px] text-ink-3">{s.k}</div>
               </div>
             ))}
           </div>
         )}
         <div className="card mt-6 p-5">
           <div className="mb-3 flex items-center gap-2">
-            <h2 className="font-bold text-white">{t.post.download}</h2>
+            <h2 className="font-bold text-ink">{t.post.download}</h2>
             {post.platform === "tiktok" && <Badge tone="green">{t.post.noWatermark}</Badge>}
           </div>
           <div className="flex flex-wrap gap-2">
             {post.media.map((m, i) => (
-              <a key={i} href={downloadHref(post.platform, ref, post.author, i)} className="btn-gold" rel="nofollow">
+              <a key={i} href={downloadHref(post.platform, ref, post.author, i)} className="btn-primary" rel="nofollow">
                 ⬇ {m.type === "video" ? t.post.downloadVideo : t.post.downloadImage}
                 {post.media.length > 1 ? ` ${i + 1}` : ""}
               </a>
@@ -87,13 +87,13 @@ export function PostView({ post, t, locale }: { post: Post; t: Dict; locale: Loc
           </div>
         </div>
         {post.music && (
-          <div className="mt-4 text-sm text-slate-400">
-            ♫ {t.post.music}: <span className="text-slate-200">{post.music.title}</span> — {post.music.author}
+          <div className="mt-4 text-sm text-ink-3">
+            ♫ {t.post.music}: <span className="text-ink-2">{post.music.title}</span> — {post.music.author}
           </div>
         )}
         {post.hashtags.length > 0 && (
           <div className="mt-6">
-            <h3 className="mb-2 text-sm font-bold text-white">{t.post.hashtags}</h3>
+            <h3 className="mb-2 text-sm font-bold text-ink">{t.post.hashtags}</h3>
             <div className="flex flex-wrap gap-2" dir="ltr">
               {post.hashtags.map((h) => (
                 <span key={h} className="chip">

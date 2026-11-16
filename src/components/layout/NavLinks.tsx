@@ -31,7 +31,7 @@ export function NavLinks() {
           href={it.href}
           className={cx(
             "flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium transition",
-            path.startsWith(it.href) ? "bg-white/5 text-gold-300" : "text-slate-300 hover:text-white",
+            path.startsWith(it.href) ? "bg-ink/5 text-accent-600 dark:text-accent-300" : "text-ink-2 hover:text-ink",
           )}
         >
           {it.label}
@@ -54,10 +54,10 @@ export function MobileMenu({ authed }: { authed: boolean }) {
         </svg>
       </button>
       {open && (
-        <div className="absolute inset-x-0 top-full z-50 border-b border-white/10 bg-navy-950/95 p-4 backdrop-blur">
+        <div className="absolute inset-x-0 top-full z-50 border-b border-line bg-base/95 p-4 backdrop-blur-2xl">
           <div className="grid grid-cols-2 gap-2">
             {[...items, authed ? { href: "/account", label: t.nav.account } : { href: "/login", label: t.nav.login }].map((it) => (
-              <Link key={it.href} href={it.href} onClick={() => setOpen(false)} className="card px-3 py-3 text-sm text-slate-200">
+              <Link key={it.href} href={it.href} onClick={() => setOpen(false)} className="card px-3 py-3 text-sm text-ink-2">
                 {it.label} {"pro" in it && it.pro ? <ProBadge /> : null}
               </Link>
             ))}

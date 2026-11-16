@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const r = parseRoute(params.platform, params.username);
   if (!r) return {};
   const res = await load(r.platform, decodeURIComponent(params.ref), r.username);
-  if (!res.ok) return buildMetadata({ title: `@${r.username} post | Wahm Social`, noindex: true });
+  if (!res.ok) return buildMetadata({ title: `@${r.username} post | Frostly`, noindex: true });
   const p = res.post;
   return buildMetadata({
     title: `${p.caption.slice(0, 60) || "Post"} — @${p.author} | تحميل بدون علامة مائية`,

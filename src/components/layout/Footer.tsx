@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Dict } from "@/lib/i18n";
-import { LogoMark } from "./Logo";
+import { LogoMark, Wordmark } from "./Logo";
 
 export function Footer({ t }: { t: Dict }) {
   const cols: { title: string; links: [string, string][] }[] = [
@@ -42,24 +42,22 @@ export function Footer({ t }: { t: Dict }) {
     },
   ];
   return (
-    <footer className="mt-24 border-t border-white/[0.06] bg-navy-950/60">
+    <footer className="mt-24 border-t border-line bg-glass">
       <div className="container-w grid gap-10 py-14 md:grid-cols-5">
         <div className="md:col-span-1">
           <div className="flex items-center gap-2">
             <LogoMark size={32} />
-            <span className="font-extrabold">
-              <span className="gold-text">Wahm</span> Social
-            </span>
+            <Wordmark />
           </div>
-          <p className="mt-4 text-sm leading-7 text-slate-400">{t.tagline}</p>
+          <p className="mt-4 text-sm leading-7 text-ink-3">{t.tagline}</p>
         </div>
         {cols.map((c) => (
           <div key={c.title}>
-            <h4 className="mb-3 text-sm font-bold text-gold-300">{c.title}</h4>
+            <h4 className="mb-3 text-sm font-bold text-accent-600 dark:text-accent-300">{c.title}</h4>
             <ul className="space-y-2">
               {c.links.map(([href, label]) => (
                 <li key={href}>
-                  <Link href={href} className="text-sm text-slate-400 hover:text-white">
+                  <Link href={href} className="text-sm text-ink-3 hover:text-ink">
                     {label}
                   </Link>
                 </li>
@@ -68,11 +66,11 @@ export function Footer({ t }: { t: Dict }) {
           </div>
         ))}
       </div>
-      <div className="border-t border-white/[0.05]">
-        <div className="container-w flex flex-col items-center justify-between gap-2 py-6 text-xs text-slate-500 sm:flex-row">
+      <div className="border-t border-line">
+        <div className="container-w flex flex-col items-center justify-between gap-2 py-6 text-xs text-ink-4 sm:flex-row">
           <span>{t.footer.disclaimer}</span>
           <span>
-            © {new Date().getFullYear()} Wahm · @iwahm — {t.footer.rights}
+            © {new Date().getFullYear()} Frostly · by Wahm (@iwahm) — {t.footer.rights}
           </span>
         </div>
       </div>

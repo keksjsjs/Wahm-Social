@@ -6,7 +6,7 @@ import { ProGate } from "@/components/profile/ProGate";
 import { currentUser } from "@/lib/server/auth";
 import { hasFeature } from "@/lib/plans";
 
-export const metadata = buildMetadata({ title: "قائمة المراقبة | Wahm Watchlist", path: "/watchlist", description: "راقب نمو متابعي حسابات تيك توك وانستقرام المفضلة لديك." });
+export const metadata = buildMetadata({ title: "قائمة المراقبة | Frostly Watchlist", path: "/watchlist", description: "راقب نمو متابعي حسابات تيك توك وانستقرام المفضلة لديك." });
 export const dynamic = "force-dynamic";
 
 export default async function WatchlistPage() {

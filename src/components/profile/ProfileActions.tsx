@@ -44,7 +44,7 @@ export function ProfileActions({ platform, username, canPro }: { platform: Platf
       <button onClick={share} className="btn-ghost btn-sm">
         ↗ {t.profile.share}
       </button>
-      {msg && <span className="text-center text-xs text-gold-300">{msg}</span>}
+      {msg && <span className="text-center text-xs text-accent-600 dark:text-accent-300">{msg}</span>}
     </div>
   );
 }

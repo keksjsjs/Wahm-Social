@@ -1,4 +1,6 @@
-# Wahm Social · وهم سوشال
+# Frostly · فروستلي
+
+_TikTok & Instagram downloader, profile viewer, story viewer & analytics — by Wahm (@iwahm). Suggested domain: **frostly.store**._
 
 Arabic-first SaaS for **public** TikTok & Instagram account insights: profile viewer, recent posts, watermark-free downloads, public story viewer, analytics, compare, watchlist and Pro plans.
 
@@ -9,12 +11,13 @@ Built with **Next.js 14 (App Router) + TypeScript + Tailwind**, deployed as a si
 - SSR profile pages with OG images, JSON-LD (ProfilePage, VideoObject, FAQ, Breadcrumbs), sitemap & robots
 - Post detail + no-watermark video / image / audio downloads (streamed through an allow-listed media proxy)
 - Story viewer (Instagram public stories, needs `IG_SESSIONID`)
-- Followers/following: honest locked state (not exposed publicly by platforms)
-- Analytics: engagement rate, averages, posting frequency, best day/hour, top hashtags, earnings estimate, Wahm score
+- Followers/following: per-account privacy gate (public / hidden / private). TikTok lists load via the official TikTok Research API when `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` are set; otherwise counts + "open on TikTok". Instagram lists are login-only.
+- Instagram: public link-preview fallback for profile name/avatar/counts and single posts when the web API is blocked
+- Analytics: engagement rate, averages, posting frequency, best day/hour, top hashtags, earnings estimate, Frost score
 - Pro: batch download, compare accounts, watchlist, CSV export, advanced analytics; Business: API keys
 - Auth: email/password + JWT httpOnly cookie, magic-link stub; per-plan daily quotas; burst rate limiting
 - Billing: mock mode by default; Stripe Checkout + signed webhook when keys are set
-- Admin dashboard, AR/EN i18n with RTL, dark navy/gold design
+- Admin dashboard, AR/EN i18n with RTL, icy glassmorphism design with light ("sugar") and dark ("frost") themes
 
 ## Architecture
 ```
@@ -58,3 +61,12 @@ npm test
 
 ## Deploy
 Render Blueprint: `render.yaml`. Note: free instances have an ephemeral disk; attach a disk or migrate the repositories in `lib/server/db.ts` to Postgres for durable accounts.
+
+## Code protection
+- Code is split into many small modules (UI primitives, i18n sections, blog articles, platform parsers/adapters, connections providers).
+- `productionBrowserSourceMaps: false` — no `.map` files ship.
+- Client app chunks are obfuscated in production with `webpack-obfuscator` (string arrays, renamed identifiers). Disable with `OBFUSCATE=0`.
+- Server logic (scrapers, auth, DB, quotas) is marked `server-only` and never ships to the browser.
+
+## Extra env vars
+- `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` — TikTok Research API credentials (optional) for public follower/following lists.

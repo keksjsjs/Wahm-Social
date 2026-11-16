@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * TikTok adapter — uses only public, logged-out web pages:
  *  - https://www.tiktok.com/@user            (profile SSR JSON)
@@ -7,7 +8,7 @@
  * therefore reported as unavailable instead of being bypassed.
  */
 import { cookiesFrom, extractScriptJson, httpGet, looksLikeBotWall } from "../../server/http";
-import { PlatformError, type ConnectionsResult, type PlatformAdapter, type Post, type Profile, type Story } from "../types";
+import { PlatformError, type PlatformAdapter, type Post, type Profile, type Story } from "../types";
 import { parseEmbedState, parseTikTokRef, parseUserDetail, parseVideoDetail } from "./parser";
 import { mapLimit } from "../../server/concurrency";
 
@@ -96,11 +97,5 @@ export const tiktok: PlatformAdapter & {
   async getStories(): Promise<Story[]> {
     // TikTok stories are only served via signed, logged-in endpoints.
     return [];
-  },
-
-  async getConnections(): Promise<ConnectionsResult> {
-    return { available: false, reason: "private_api", items: [] };
-  },
+  }
 };
-
-export type { Profile };

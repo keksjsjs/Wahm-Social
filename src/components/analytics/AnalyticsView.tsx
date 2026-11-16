@@ -11,7 +11,7 @@ export function AnalyticsView({ a, t, locale, pro }: { a: Analytics; t: Dict; lo
   const dayShort = t.days.map((d) => d.slice(0, locale === "ar" ? 3 : 3));
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">{interpolate(t.analytics.sample, { n: a.postsAnalyzed })}</p>
+      <p className="text-sm text-ink-4">{interpolate(t.analytics.sample, { n: a.postsAnalyzed })}</p>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label={t.analytics.engagement} value={percent(a.engagementRate, 2)} />
         <Stat label={t.analytics.avgViews} value={compact(a.avgViews, locale)} />
@@ -23,23 +23,23 @@ export function AnalyticsView({ a, t, locale, pro }: { a: Analytics; t: Dict; lo
         <div className="card flex flex-col items-center justify-center p-6">
           <Gauge value={a.growthScore} label={t.analytics.score} />
           <div className="mt-3 chip">
-            {t.analytics.tier}: <b className="text-gold-300">{t.analytics.tiers[a.tier]}</b>
+            {t.analytics.tier}: <b className="text-accent-600 dark:text-accent-300">{t.analytics.tiers[a.tier]}</b>
           </div>
         </div>
         <div className="card p-6 md:col-span-2">
-          <h3 className="mb-3 font-bold text-white">{t.analytics.topHashtags}</h3>
+          <h3 className="mb-3 font-bold text-ink">{t.analytics.topHashtags}</h3>
           <div className="flex flex-wrap gap-2">
             {a.topHashtags.length ? (
               a.topHashtags.slice(0, pro ? 15 : 3).map((h) => (
                 <span key={h.tag} className="chip" dir="ltr">
-                  #{h.tag} <span className="text-gold-400">×{h.count}</span>
-                  {pro && <span className="text-slate-500">♥{compact(h.avgLikes, "en")}</span>}
+                  #{h.tag} <span className="text-accent-500 dark:text-accent-400">×{h.count}</span>
+                  {pro && <span className="text-ink-4">♥{compact(h.avgLikes, "en")}</span>}
                 </span>
               ))
             ) : (
-              <span className="text-sm text-slate-500">—</span>
+              <span className="text-sm text-ink-4">—</span>
             )}
-            {!pro && a.topHashtags.length > 3 && <span className="chip text-gold-300">+{a.topHashtags.length - 3} PRO</span>}
+            {!pro && a.topHashtags.length > 3 && <span className="chip text-accent-600 dark:text-accent-300">+{a.topHashtags.length - 3} PRO</span>}
           </div>
         </div>
       </div>
@@ -54,27 +54,27 @@ export function AnalyticsView({ a, t, locale, pro }: { a: Analytics; t: Dict; lo
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="card p-6">
-              <h3 className="mb-4 font-bold text-white">{t.analytics.weekday}</h3>
+              <h3 className="mb-4 font-bold text-ink">{t.analytics.weekday}</h3>
               <BarChart values={a.weekdayHistogram} labels={dayShort} highlight={a.bestWeekday} />
             </div>
             <div className="card p-6">
-              <h3 className="mb-4 font-bold text-white">{t.analytics.hours}</h3>
+              <h3 className="mb-4 font-bold text-ink">{t.analytics.hours}</h3>
               <BarChart values={a.hourHistogram} labels={a.hourHistogram.map((_, i) => (i % 6 === 0 ? String(i) : ""))} highlight={a.bestHour} />
             </div>
           </div>
           <div className="card p-6">
-            <h3 className="mb-4 font-bold text-white">{t.analytics.timeline}</h3>
+            <h3 className="mb-4 font-bold text-ink">{t.analytics.timeline}</h3>
             <LineChart points={a.timeline.map((p) => ({ x: p.t, y: p.likes }))} />
           </div>
           <div className="card p-6">
-            <h3 className="font-bold text-white">{t.analytics.earnings}</h3>
-            <div className="gold-text mt-2 text-3xl font-black" dir="ltr">
+            <h3 className="font-bold text-ink">{t.analytics.earnings}</h3>
+            <div className="accent-text mt-2 text-3xl font-black" dir="ltr">
               ${compact(a.estimatedEarnings.min, "en")} – ${compact(a.estimatedEarnings.max, "en")}
             </div>
           </div>
           {a.topPosts.length > 0 && (
             <div>
-              <h3 className="mb-3 font-bold text-white">{t.analytics.topPosts}</h3>
+              <h3 className="mb-3 font-bold text-ink">{t.analytics.topPosts}</h3>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                 {a.topPosts.map((p) => (
                   <PostCard key={p.id} post={p} locale={locale} />

@@ -2,24 +2,79 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------
+   Frostly design tokens — "sugar" light theme & "frost" dark theme.
+   Values are RGB triplets so Tailwind can apply alpha.
+------------------------------------------------------------------- */
 :root {
+  color-scheme: light;
+  --base: 246 248 252;
+  --surface: 255 255 255;
+  --surface-2: 238 242 250;
+  --line: 15 23 42;
+  --ink: 15 23 42;
+  --ink-2: 51 65 85;
+  --ink-3: 100 116 139;
+  --ink-4: 148 163 184;
+  --shadow: 71 85 105;
+  --accent-200: 199 222 255;
+  --accent-300: 125 196 255;
+  --accent-400: 96 165 250;
+  --accent-500: 99 120 246;
+  --accent-600: 79 90 230;
+  --accent-700: 139 92 246;
+  --glass: 255 255 255;
+  --glass-alpha: 0.62;
+  --line-alpha: 0.08;
+}
+
+.dark {
   color-scheme: dark;
+  --base: 7 10 22;
+  --surface: 17 22 40;
+  --surface-2: 26 32 56;
+  --line: 255 255 255;
+  --ink: 241 245 255;
+  --ink-2: 203 213 235;
+  --ink-3: 148 163 196;
+  --ink-4: 100 116 150;
+  --shadow: 0 0 0;
+  --accent-200: 186 230 253;
+  --accent-300: 165 216 255;
+  --accent-400: 125 190 255;
+  --accent-500: 129 140 248;
+  --accent-600: 99 102 241;
+  --accent-700: 192 132 252;
+  --glass: 255 255 255;
+  --glass-alpha: 0.055;
+  --line-alpha: 0.1;
 }
 
 html,
 body {
-  @apply bg-navy-950 text-slate-100 antialiased;
+  @apply bg-base text-ink antialiased;
 }
 
 body {
-  background-image: radial-gradient(1200px 600px at 50% -200px, rgba(212, 169, 68, 0.12), transparent 60%),
-    radial-gradient(800px 400px at 100% 0%, rgba(42, 64, 120, 0.35), transparent 60%);
-  background-attachment: fixed;
   min-height: 100vh;
+  background-image: radial-gradient(900px 500px at 10% -10%, rgb(var(--accent-300) / 0.28), transparent 60%),
+    radial-gradient(800px 500px at 100% 0%, rgb(var(--accent-700) / 0.18), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, rgb(var(--accent-400) / 0.15), transparent 60%);
+  background-attachment: fixed;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ::selection {
-  @apply bg-gold-500/40 text-white;
+  @apply bg-accent-400/30;
+}
+
+@layer utilities {
+  .border-line {
+    border-color: rgb(var(--line) / var(--line-alpha));
+  }
+  .bg-glass {
+    background-color: rgb(var(--glass) / var(--glass-alpha));
+  }
 }
 
 @layer components {
@@ -27,50 +82,50 @@ body {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
   .card {
-    @apply rounded-2xl border border-white/[0.07] bg-navy-900/70 shadow-card backdrop-blur;
+    @apply rounded-3xl border border-line bg-glass shadow-glass backdrop-blur-2xl backdrop-saturate-150;
   }
   .card-hover {
-    @apply transition duration-200 hover:-translate-y-0.5 hover:border-gold-500/40 hover:shadow-gold;
+    @apply transition duration-300 hover:-translate-y-1 hover:border-accent-400/40 hover:shadow-glow;
   }
-  .gold-text {
-    @apply bg-gold-gradient bg-clip-text text-transparent;
+  .accent-text {
+    @apply bg-accent-gradient bg-clip-text text-transparent;
   }
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400/70 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-400/60 disabled:cursor-not-allowed disabled:opacity-50;
   }
-  .btn-gold {
-    @apply btn bg-gold-gradient text-navy-950 shadow-gold hover:brightness-110;
+  .btn-primary {
+    @apply btn bg-accent-gradient text-white shadow-glow hover:brightness-110 active:scale-[.98];
   }
   .btn-ghost {
-    @apply btn border border-white/10 bg-white/[0.03] text-slate-200 hover:border-gold-500/40 hover:text-gold-300;
+    @apply btn border border-line bg-glass text-ink-2 backdrop-blur-xl hover:border-accent-400/50 hover:text-accent-600 dark:hover:text-accent-300;
   }
   .btn-sm {
-    @apply px-3 py-1.5 text-xs;
+    @apply rounded-xl px-3 py-1.5 text-xs;
   }
   .input {
-    @apply w-full rounded-xl border border-white/10 bg-navy-950/70 px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-gold-500/60 focus:outline-none focus:ring-2 focus:ring-gold-500/20;
+    @apply w-full rounded-2xl border border-line bg-glass px-4 py-3 text-sm text-ink placeholder:text-ink-4 backdrop-blur-xl focus:border-accent-400/60 focus:outline-none focus:ring-4 focus:ring-accent-400/15;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-xs text-slate-300;
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-glass px-3 py-1 text-xs text-ink-2 backdrop-blur-xl;
   }
   .section-title {
-    @apply text-2xl font-bold text-white sm:text-3xl;
+    @apply text-2xl font-extrabold tracking-tight text-ink sm:text-3xl;
   }
   .muted {
-    @apply text-slate-400;
+    @apply text-ink-3;
   }
   .skeleton {
-    @apply animate-shimmer rounded-lg bg-[linear-gradient(90deg,rgba(255,255,255,.04)_0%,rgba(255,255,255,.09)_50%,rgba(255,255,255,.04)_100%)] bg-[length:800px_100%];
+    @apply animate-shimmer rounded-2xl bg-[linear-gradient(90deg,rgb(var(--line)/.04)_0%,rgb(var(--line)/.10)_50%,rgb(var(--line)/.04)_100%)] bg-[length:800px_100%];
   }
   .prose-w h2 {
-    @apply mb-3 mt-8 text-xl font-bold text-gold-300;
+    @apply mb-3 mt-8 text-xl font-bold text-accent-600 dark:text-accent-300;
   }
   .prose-w p {
-    @apply mb-4 leading-8 text-slate-300;
+    @apply mb-4 leading-8 text-ink-2;
   }
   .prose-w ul,
   .prose-w ol {
-    @apply mb-4 space-y-2 ps-6 text-slate-300;
+    @apply mb-4 space-y-2 ps-6 text-ink-2;
   }
   .prose-w ul {
     @apply list-disc;
@@ -79,10 +134,10 @@ body {
     @apply list-decimal;
   }
   .prose-w strong {
-    @apply text-white;
+    @apply text-ink;
   }
   .prose-w code {
-    @apply rounded bg-white/10 px-1.5 py-0.5 text-gold-300;
+    @apply rounded bg-ink/10 px-1.5 py-0.5 text-accent-600 dark:text-accent-300;
   }
 }
 
@@ -91,4 +146,13 @@ body {
 }
 .no-scrollbar {
   scrollbar-width: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
 }

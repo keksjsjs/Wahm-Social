@@ -23,11 +23,11 @@ export function FeatureGrid({ t }: { t: Dict }) {
         return (
           <div key={k} className="card card-hover p-6">
             <div className="mb-4 flex items-center justify-between">
-              <span className="grid h-11 w-11 place-items-center rounded-xl border border-gold-500/30 bg-gold-500/10 text-xl text-gold-300">{ICONS[k]}</span>
+              <span className="grid h-11 w-11 place-items-center rounded-xl border border-accent-500/30 bg-accent-500/10 text-xl text-accent-600 dark:text-accent-300">{ICONS[k]}</span>
               {pro && <ProBadge />}
             </div>
-            <h3 className="text-lg font-bold text-white">{title}</h3>
-            <p className="mt-2 text-sm leading-7 text-slate-400">{desc.replace(/\s*\((Pro|برو)\)/, "")}</p>
+            <h3 className="text-lg font-bold text-ink">{title}</h3>
+            <p className="mt-2 text-sm leading-7 text-ink-3">{desc.replace(/\s*\((Pro|برو)\)/, "")}</p>
           </div>
         );
       })}

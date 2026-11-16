@@ -75,7 +75,7 @@ export function CompareTool({ initial, slots }: { initial: { platform: Platform;
               + {t.compare.add}
             </button>
           )}
-          <button className="btn-gold" onClick={run} disabled={busy}>
+          <button className="btn-primary" onClick={run} disabled={busy}>
             {busy ? t.states.loading : t.compare.run}
           </button>
           {err && <span className="self-center text-sm text-rose-400">{err}</span>}
@@ -85,14 +85,14 @@ export function CompareTool({ initial, slots }: { initial: { platform: Platform;
         <div className="card mt-6 overflow-x-auto">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
-              <tr className="border-b border-white/10">
-                <th className="p-4 text-start text-slate-400">{t.compare.metric}</th>
+              <tr className="border-b border-line">
+                <th className="p-4 text-start text-ink-3">{t.compare.metric}</th>
                 {rows.map((r, i) => (
                   <th key={i} className="p-4">
                     {r.ok ? (
                       <div className="flex flex-col items-center gap-2">
                         <Avatar src={r.profile.avatarUrl} alt={r.profile.username} size={48} />
-                        <span className="flex items-center gap-1 text-white" dir="ltr">
+                        <span className="flex items-center gap-1 text-ink" dir="ltr">
                           <PlatformIcon platform={r.profile.platform} className="h-3 w-3" />@{r.profile.username}
                         </span>
                       </div>
@@ -105,13 +105,13 @@ export function CompareTool({ initial, slots }: { initial: { platform: Platform;
             </thead>
             <tbody>
               {metrics.map(([k, label, fmt]) => (
-                <tr key={k} className="border-b border-white/[0.04]">
-                  <td className="p-4 text-slate-300">{label}</td>
+                <tr key={k} className="border-b border-line">
+                  <td className="p-4 text-ink-2">{label}</td>
                   {rows.map((r, i) => {
                     const v = r.ok ? r.metrics[k] : null;
                     const isBest = r.ok && v !== null && Number(v) === best(k) && okRows.length > 1;
                     return (
-                      <td key={i} className={`p-4 text-center font-bold ${isBest ? "text-gold-300" : "text-white"}`}>
+                      <td key={i} className={`p-4 text-center font-bold ${isBest ? "text-accent-600 dark:text-accent-300" : "text-ink"}`}>
                         {v === null || v === undefined ? "—" : fmt(Number(v))} {isBest && "★"}
                       </td>
                     );

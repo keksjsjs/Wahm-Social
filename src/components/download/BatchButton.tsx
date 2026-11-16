@@ -47,11 +47,11 @@ export function BatchButton({ platform, username, canBatch, disabled }: { platfo
     <div className="flex items-center gap-2">
       {err && <span className="text-xs text-rose-400">{err}</span>}
       {state && (
-        <span className="text-xs text-gold-300">
+        <span className="text-xs text-accent-600 dark:text-accent-300">
           {state.done}/{state.total}
         </span>
       )}
-      <button onClick={run} disabled={disabled || (state !== null && state.done < state.total)} className="btn-gold btn-sm">
+      <button onClick={run} disabled={disabled || (state !== null && state.done < state.total)} className="btn-primary btn-sm">
         ⇊ {t.profile.batch}
       </button>
     </div>

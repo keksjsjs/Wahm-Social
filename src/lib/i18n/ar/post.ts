@@ -1,0 +1,17 @@
+export const post = {
+    views: "مشاهدة",
+    likes: "إعجاب",
+    comments: "تعليق",
+    shares: "مشاركة",
+    saves: "حفظ",
+    download: "تحميل",
+    downloadVideo: "تحميل الفيديو",
+    downloadImage: "تحميل الصورة",
+    downloadAudio: "تحميل الصوت",
+    noWatermark: "بدون علامة مائية",
+    hashtags: "الهاشتاقات",
+    music: "الصوت",
+    published: "نُشر",
+    openOriginal: "فتح المنشور الأصلي",
+    back: "رجوع للحساب",
+  };

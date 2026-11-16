@@ -42,7 +42,7 @@ export function ApiKeyButton({ initial }: { initial?: string }) {
   const [key, setKey] = useState(initial ?? "");
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-      <code className="flex-1 truncate rounded-lg bg-navy-950 px-3 py-2 text-xs text-gold-300" dir="ltr">
+      <code className="flex-1 truncate rounded-lg bg-surface px-3 py-2 text-xs text-accent-600 dark:text-accent-300" dir="ltr">
         {key || "—"}
       </code>
       <button

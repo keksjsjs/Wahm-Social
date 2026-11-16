@@ -4,7 +4,7 @@ import { PageHeader, ProBadge } from "@/components/ui";
 import { QuickJump } from "@/components/search/QuickJump";
 
 export const metadata = buildMetadata({
-  title: "تحليل حساب تيك توك وانستقرام — معدل التفاعل وأفضل وقت للنشر | Wahm Analytics",
+  title: "تحليل حساب تيك توك وانستقرام — معدل التفاعل وأفضل وقت للنشر | Frostly Analytics",
   description: "احسب معدل التفاعل، متوسط المشاهدات، أفضل وقت للنشر، أقوى الهاشتاقات وتقدير سعر الإعلان لأي حساب عام.",
   path: "/analytics",
 });
@@ -18,7 +18,7 @@ export default function AnalyticsLanding() {
       <QuickJump tab="analytics" />
       <div className="mx-auto mt-14 grid max-w-4xl grid-cols-2 gap-3 md:grid-cols-4">
         {items.map((x, i) => (
-          <div key={x} className="card flex items-center justify-between p-4 text-sm text-slate-200">
+          <div key={x} className="card flex items-center justify-between p-4 text-sm text-ink-2">
             {x} {i > 1 && <ProBadge />}
           </div>
         ))}

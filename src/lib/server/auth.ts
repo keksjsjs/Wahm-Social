@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * JWT session auth (HS256 via `jose`) stored in an httpOnly cookie.
  * Works in route handlers and server components.
@@ -94,7 +95,7 @@ export async function requireUser(): Promise<User> {
 
 export async function requireFeature(f: Feature): Promise<User> {
   const u = await requireUser();
-  if (!hasFeature(u.plan, f)) throw new PlatformError("pro_required", "This feature requires Wahm Pro", 402);
+  if (!hasFeature(u.plan, f)) throw new PlatformError("pro_required", "This feature requires Frostly Pro", 402);
   return u;
 }
 

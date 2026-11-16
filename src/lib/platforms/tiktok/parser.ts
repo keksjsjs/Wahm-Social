@@ -52,6 +52,7 @@ export function parseUserDetail(json: Any): { status: number; profile?: Profile;
     createdAt: u.createTime || undefined,
     language: u.language,
     hasStory: !!u.UserStoryStatus,
+    followingVisibility: typeof u.followingVisibility === "number" ? u.followingVisibility : undefined,
     profileUrl: `https://www.tiktok.com/@${u.uniqueId}`,
   };
   const items: Post[] = Array.isArray(info.itemList) ? info.itemList.map((it: Any) => parseItemStruct(it)).filter(Boolean) : [];

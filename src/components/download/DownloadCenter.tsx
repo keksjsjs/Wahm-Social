@@ -45,10 +45,10 @@ export function DownloadCenter({ initialUrl = "" }: { initialUrl?: string }) {
           e.preventDefault();
           go();
         }}
-        className="card flex flex-col gap-2 p-2.5 shadow-gold sm:flex-row"
+        className="card flex flex-col gap-2 p-2.5 shadow-glow sm:flex-row"
       >
         <input
-          className="min-w-0 flex-1 bg-transparent px-3 py-3 text-white placeholder:text-slate-500 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent px-3 py-3 text-ink placeholder:text-ink-4 focus:outline-none"
           placeholder={t.download.placeholder}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
@@ -58,7 +58,7 @@ export function DownloadCenter({ initialUrl = "" }: { initialUrl?: string }) {
             if (v) setTimeout(() => go(v), 0);
           }}
         />
-        <button className="btn-gold px-6" disabled={busy}>
+        <button className="btn-primary px-6" disabled={busy}>
           {busy ? t.states.loading : t.download.go}
         </button>
       </form>
@@ -68,17 +68,17 @@ export function DownloadCenter({ initialUrl = "" }: { initialUrl?: string }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={proxied(post.cover)} alt="" className="aspect-[3/4] w-full rounded-xl object-cover sm:w-44" />
           <div className="min-w-0 flex-1">
-            <div className="text-sm text-gold-300" dir="ltr">
+            <div className="text-sm text-accent-600 dark:text-accent-300" dir="ltr">
               @{post.author}
             </div>
-            <p className="mt-2 line-clamp-3 text-white">{post.caption || "—"}</p>
-            <div className="mt-2 flex gap-4 text-xs text-slate-400">
+            <p className="mt-2 line-clamp-3 text-ink">{post.caption || "—"}</p>
+            <div className="mt-2 flex gap-4 text-xs text-ink-3">
               {post.stats.views !== undefined && <span>▶ {compact(post.stats.views, "en")}</span>}
               {post.stats.likes !== undefined && <span>♥ {compact(post.stats.likes, "en")}</span>}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               {post.media.map((m, i) => (
-                <a key={i} href={downloadHref(post.platform, ref, post.author, i)} className="btn-gold btn-sm">
+                <a key={i} href={downloadHref(post.platform, ref, post.author, i)} className="btn-primary btn-sm">
                   ⬇ {m.type === "video" ? t.post.downloadVideo : t.post.downloadImage} {post.media.length > 1 ? i + 1 : ""}
                 </a>
               ))}
@@ -99,8 +99,8 @@ export function DownloadCenter({ initialUrl = "" }: { initialUrl?: string }) {
       <div className="mt-10 grid gap-3 sm:grid-cols-3">
         {t.download.steps.map((s, i) => (
           <div key={s} className="card p-5 text-center">
-            <div className="gold-text text-3xl font-black">{i + 1}</div>
-            <div className="mt-2 text-sm text-slate-300">{s}</div>
+            <div className="accent-text text-3xl font-black">{i + 1}</div>
+            <div className="mt-2 text-sm text-ink-2">{s}</div>
           </div>
         ))}
       </div>

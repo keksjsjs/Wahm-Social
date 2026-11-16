@@ -9,8 +9,8 @@ import { hasFeature } from "@/lib/plans";
 import { ProBadge } from "@/components/ui";
 
 export const metadata = buildMetadata({
-  title: "تحميل فيديو تيك توك وانستقرام بدون علامة مائية | Wahm Downloader",
-  description: "مركز التحميل من وهم: الصق رابط تيك توك أو انستقرام وحمل الفيديو أو الصور أو الصوت بأعلى جودة وبدون علامة مائية. TikTok & Instagram downloader.",
+  title: "تحميل فيديو تيك توك وانستقرام بدون علامة مائية | Frostly Downloader",
+  description: "مركز التحميل من فروستلي: الصق رابط تيك توك أو انستقرام وحمل الفيديو أو الصور أو الصوت بأعلى جودة وبدون علامة مائية. TikTok & Instagram downloader.",
   path: "/download",
   keywords: ["تحميل تيك توك", "تحميل انستقرام", "tiktok downloader", "instagram reels download", "بدون علامة مائية"],
 });
@@ -25,10 +25,10 @@ export default async function DownloadPage({ searchParams }: { searchParams: { u
       <PageHeader title={t.download.title} subtitle={t.download.subtitle} />
       <DownloadCenter initialUrl={searchParams.url ?? ""} />
       <section className="mx-auto mt-16 max-w-3xl">
-        <h2 className="mb-2 flex items-center gap-2 text-xl font-bold text-white">
+        <h2 className="mb-2 flex items-center gap-2 text-xl font-bold text-ink">
           {t.download.batchTitle} <ProBadge />
         </h2>
-        <p className="mb-4 text-sm text-slate-400">{t.download.batchDesc}</p>
+        <p className="mb-4 text-sm text-ink-3">{t.download.batchDesc}</p>
         <ProGate locked={!hasFeature(user?.plan, "batch_download")} t={t}>
           <BatchLinks />
         </ProGate>

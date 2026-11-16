@@ -16,7 +16,7 @@ export function PostCard({ post, locale, linkable = true }: { post: Post; locale
         loading="lazy"
         referrerPolicy="no-referrer"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-navy-950/90 via-transparent to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent" />
       <div className="absolute start-2 top-2 flex gap-1">
         {post.type === "video" && <span className="rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] text-white">▶ {duration(post.duration)}</span>}
         {post.type === "carousel" && <span className="rounded-md bg-black/60 px-1.5 py-0.5 text-[10px] text-white">❏ {post.media.length}</span>}
@@ -27,11 +27,11 @@ export function PostCard({ post, locale, linkable = true }: { post: Post; locale
           {post.stats.likes !== undefined && <span>♥ {compact(post.stats.likes, "en")}</span>}
           {post.stats.comments !== undefined && <span>💬 {compact(post.stats.comments, "en")}</span>}
         </div>
-        {post.createdAt && <div className="mt-0.5 text-[10px] text-slate-300">{timeAgo(post.createdAt, locale)}</div>}
+        {post.createdAt && <div className="mt-0.5 text-[10px] text-ink-2">{timeAgo(post.createdAt, locale)}</div>}
       </div>
     </>
   );
-  const cls = "group relative block aspect-[3/4] overflow-hidden rounded-xl border border-white/[0.06] bg-navy-800";
+  const cls = "group relative block aspect-[3/4] overflow-hidden rounded-xl border border-line bg-surface-2";
   return linkable && !post.id.startsWith("demo") ? (
     <Link href={postHref(post.platform, post.author, ref)} className={cls}>
       {inner}

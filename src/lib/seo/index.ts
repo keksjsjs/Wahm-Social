@@ -4,10 +4,10 @@ import { env } from "../env";
 import type { Post, Profile } from "../platforms/types";
 import { compact } from "../format";
 
-export const SITE_NAME = "Wahm Social";
-export const SITE_NAME_AR = "وهم سوشال";
+export const SITE_NAME = "Frostly";
+export const SITE_NAME_AR = "فروستلي";
 export const DEFAULT_DESCRIPTION =
-  "وهم سوشال: اعرض أي حساب تيك توك أو انستقرام عام، حمّل الفيديو بدون علامة مائية، شاهد الستوري العامة وحلل التفاعل. Wahm Social — TikTok & Instagram profile viewer, downloader and analytics.";
+  "فروستلي: تحميل فيديو تيك توك بدون علامة مائية، تحميل ريلز وستوري انستقرام، عرض الحسابات ومعرفة المتابعين وتحليل التفاعل مجاناً. Frostly — TikTok downloader no watermark, Instagram reels & story downloader, profile viewer and analytics.";
 
 export const absUrl = (path = "/") => `${env.siteUrl}${path.startsWith("/") ? path : `/${path}`}`;
 
@@ -22,7 +22,8 @@ export function buildMetadata(opts: {
 }): Metadata {
   const description = opts.description ?? DEFAULT_DESCRIPTION;
   const url = absUrl(opts.path ?? "/");
-  const image = opts.image ?? absUrl(`/api/og?title=${encodeURIComponent(opts.title)}`);
+  const latin = opts.title.split(/[|—]/).map((x) => x.trim()).find((x) => /[A-Za-z]{3}/.test(x) && !/[\u0600-\u06FF]/.test(x)) ?? "Frostly";
+  const image = opts.image ?? absUrl(`/api/og?title=${encodeURIComponent(latin)}`);
   return {
     title: opts.title,
     description,
@@ -45,7 +46,7 @@ export function buildMetadata(opts: {
 
 export function profileMetadata(p: Profile): Metadata {
   const plat = p.platform === "tiktok" ? "TikTok" : "Instagram";
-  const title = `${p.displayName} (@${p.username}) ${plat} — ${compact(p.followers, "en")} followers | Wahm`;
+  const title = `${p.displayName} (@${p.username}) ${plat} — ${compact(p.followers, "en")} followers, posts & downloads | Frostly`;
   const description = `${p.displayName} @${p.username} على ${p.platform === "tiktok" ? "تيك توك" : "انستقرام"}: ${compact(p.followers)} متابع، ${compact(
     p.postsCount,
   )} منشور. شاهد المنشورات والإحصائيات وحمّل الفيديو بدون علامة مائية. ${p.bio.slice(0, 120)}`;
@@ -55,7 +56,7 @@ export function profileMetadata(p: Profile): Metadata {
     path: `/${p.platform}/${p.username}`,
     image: absUrl(`/api/og?u=${encodeURIComponent(p.username)}&p=${p.platform}&f=${p.followers}&n=${encodeURIComponent(p.displayName)}`),
     type: "profile",
-    keywords: [p.username, p.displayName, `${p.username} ${plat}`, `${plat} downloader`, "تحميل", "متابعين", "تحليل حساب"],
+    keywords: [p.username, p.displayName, `@${p.username}`, `${p.username} ${plat}`, `${p.username} followers`, `${p.username} ${plat} downloader`, `تحميل فيديوهات ${p.username}`, `متابعين ${p.username}`, `${plat} viewer`, `${plat} downloader`, "عرض حساب", "تحليل حساب"],
   });
 }
 

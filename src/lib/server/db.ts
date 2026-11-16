@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * Tiny JSON-file document store. Good for an MVP on a single instance;
  * the Repository interfaces make it straightforward to move to Postgres.

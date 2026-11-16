@@ -27,15 +27,15 @@ export function QuickJump({ tab, platforms = ["tiktok", "instagram"] }: { tab: s
             key={p}
             type="button"
             onClick={() => setPlatform(p)}
-            className={cx("chip", platform === p && "border-gold-400/60 text-gold-200")}
+            className={cx("chip", platform === p && "border-accent-400/60 text-accent-600 dark:text-accent-200")}
           >
             <PlatformIcon platform={p} className="h-3 w-3" /> {p === "tiktok" ? t.search.tiktok : t.search.instagram}
           </button>
         ))}
       </div>
       <div className="card flex gap-2 p-2">
-        <input className="min-w-0 flex-1 bg-transparent px-3 text-white focus:outline-none" dir="ltr" placeholder="@username" value={u} onChange={(e) => setU(e.target.value)} />
-        <button className="btn-gold">{t.search.button}</button>
+        <input className="min-w-0 flex-1 bg-transparent px-3 text-ink focus:outline-none" dir="ltr" placeholder="@username" value={u} onChange={(e) => setU(e.target.value)} />
+        <button className="btn-primary">{t.search.button}</button>
       </div>
     </form>
   );

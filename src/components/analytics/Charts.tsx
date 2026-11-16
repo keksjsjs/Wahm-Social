@@ -23,7 +23,7 @@ export function BarChart({ values, labels, height = 140, highlight }: { values: 
           );
         })}
       </svg>
-      <div className="mt-2 flex justify-between text-[10px] text-slate-500" dir="ltr">
+      <div className="mt-2 flex justify-between text-[10px] text-ink-4" dir="ltr">
         {labels.map((l, i) => (
           <span key={i} className="flex-1 text-center">
             {l}
@@ -35,7 +35,7 @@ export function BarChart({ values, labels, height = 140, highlight }: { values: 
 }
 
 export function LineChart({ points, height = 160 }: { points: { x: number; y: number }[]; height?: number }) {
-  if (points.length < 2) return <div className="grid h-32 place-items-center text-sm text-slate-500">—</div>;
+  if (points.length < 2) return <div className="grid h-32 place-items-center text-sm text-ink-4">—</div>;
   const xs = points.map((p) => p.x);
   const ys = points.map((p) => p.y);
   const [minX, maxX] = [Math.min(...xs), Math.max(...xs)];
@@ -75,7 +75,7 @@ export function Gauge({ value, label }: { value: number; label: string }) {
           {v}
         </text>
       </svg>
-      <div className="text-xs text-slate-400">{label}</div>
+      <div className="text-xs text-ink-3">{label}</div>
     </div>
   );
 }

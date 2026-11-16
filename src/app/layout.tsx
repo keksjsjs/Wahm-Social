@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Tajawal } from "next/font/google";
+import { Inter, IBM_Plex_Sans_Arabic } from "next/font/google";
+import { cookies } from "next/headers";
+import { THEME_COOKIE, themeBootScript } from "@/lib/theme";
+import { ALL_KEYWORDS } from "@/lib/seo/keywords";
 import "./globals.css";
 import { getDict } from "@/lib/i18n/server";
 import { dirFor } from "@/lib/i18n";
@@ -11,39 +14,41 @@ import { env } from "@/lib/env";
 import { DEFAULT_DESCRIPTION, jsonLdOrganization, jsonLdWebsite } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
 
-const font = Tajawal({ subsets: ["arabic", "latin"], weight: ["400", "500", "700", "800", "900"], variable: "--font-sans", display: "swap" });
+const latin = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], variable: "--font-ar", display: "swap" });
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.siteUrl),
-  title: { default: "وهم سوشال | Wahm Social — عارض وتحميل تيك توك وانستقرام", template: "%s" },
+  title: { default: "Frostly — TikTok & Instagram Downloader, Viewer & Analytics | فروستلي", template: "%s" },
   description: DEFAULT_DESCRIPTION,
-  applicationName: "Wahm Social",
+  applicationName: "Frostly",
   authors: [{ name: "Wahm", url: "https://x.com/iwahm" }],
-  keywords: [
-    "تحميل تيك توك",
-    "تحميل فيديو تيك توك بدون علامة مائية",
-    "عرض حساب انستقرام",
-    "ستوري انستقرام",
-    "تحليل حساب تيك توك",
-    "TikTok downloader",
-    "Instagram viewer",
-    "TikTok analytics",
-    "Instagram story viewer",
-    "Wahm",
-  ],
+  keywords: ALL_KEYWORDS,
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
-  openGraph: { siteName: "Wahm Social", type: "website", images: ["/api/og"] },
+  category: "technology",
+  openGraph: { siteName: "Frostly", type: "website", images: ["/api/og"] },
   twitter: { card: "summary_large_image", site: "@iwahm" },
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = { themeColor: "#050a18", width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f8fc" },
+    { media: "(prefers-color-scheme: dark)", color: "#070a16" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+};
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const { locale, t } = getDict();
   const user = await currentUser();
+  const theme = cookies().get(THEME_COOKIE)?.value;
   return (
-    <html lang={locale} dir={dirFor(locale)} className={font.variable}>
+    <html lang={locale} dir={dirFor(locale)} className={`${latin.variable} ${arabic.variable} ${theme === "dark" ? "dark" : ""}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootScript }} />
+      </head>
       <body className="font-sans">
         <JsonLd data={[jsonLdWebsite(), jsonLdOrganization()]} />
         <I18nProvider locale={locale} t={t}>

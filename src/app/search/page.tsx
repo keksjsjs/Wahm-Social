@@ -6,7 +6,7 @@ import { routeForQuery } from "@/lib/route";
 import { PageHeader } from "@/components/ui";
 import type { Platform } from "@/lib/platforms/types";
 
-export const metadata = buildMetadata({ title: "بحث | Wahm Social", path: "/search", noindex: true });
+export const metadata = buildMetadata({ title: "بحث | Frostly", path: "/search", noindex: true });
 
 export default function SearchPage({ searchParams }: { searchParams: { q?: string; p?: string } }) {
   const platform: Platform = searchParams.p === "instagram" ? "instagram" : "tiktok";
