@@ -97,7 +97,7 @@ async function tikwmVideoPost(url: string): Promise<{ ok: true; data: unknown } 
       timeoutMs: 20000,
       headers: { ...HEADERS, "content-type": "application/x-www-form-urlencoded" },
     });
-    if (thirdPartyBlocked(res.status, res.text, res.headers)) {
+    if (thirdPartyBlocked(res.status, res.text, res.headers) || res.status === 403 || res.status === 429) {
       record("video_post", "tikwm_blocked", res.status);
       return { ok: false, note: "tikwm_blocked" };
     }
