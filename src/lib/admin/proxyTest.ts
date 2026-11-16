@@ -1,5 +1,5 @@
 import "server-only";
-import { DESKTOP_UA, proxiedFetch } from "../server/http";
+import { DESKTOP_UA, looksLikeBotWall, proxiedFetch } from "../server/http";
 import { thirdPartyBlocked } from "../platforms/tiktok/fallback-http";
 
 export function validateProxyUrl(v: string): string | null {
@@ -31,7 +31,13 @@ export async function runProxyTest(candidate?: string): Promise<string> {
     try {
       const res = await f(url, { headers: { "user-agent": DESKTOP_UA, accept: "text/html,application/json;q=0.9,*/*;q=0.8" }, signal: ctrl.signal, cache: "no-store" } as RequestInit);
       const text = await res.text();
-      const blocked = thirdPartyBlocked(res.status, text, res.headers) && label !== "countik.com";
+      // tiktok.com is an HTML page (only a challenge/WAF page counts as blocked); tikwm/countik must return JSON.
+      const blocked =
+        label === "tiktok.com"
+          ? looksLikeBotWall(text) || /_wafchallengeid|tiktok-verify-page|captcha/i.test(text.slice(0, 20000)) || res.status === 403
+          : label === "tikwm.com"
+            ? thirdPartyBlocked(res.status, text, res.headers) || res.status === 403
+            : res.status === 403 || looksLikeBotWall(text);
       const verdict = res.status >= 200 && res.status < 400 && !blocked ? "✅ يشتغل" : blocked ? "⛔ محجوب (Cloudflare/تحقق)" : "⚠️";
       lines.push(`• ${label}: HTTP ${res.status} ${verdict} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
     } catch (e) {
