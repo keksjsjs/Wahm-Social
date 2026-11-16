@@ -8,6 +8,8 @@ import { cached, TTL } from "../server/cache";
 import { instagram } from "./instagram/adapter";
 import { tiktok } from "./tiktok/adapter";
 import { demoPosts, demoProfile, demoStories } from "./demo";
+import { hasTikTokSession } from "./tiktok/session";
+import { browserList } from "./tiktok/followers/browser";
 import { connectionsFor } from "./connections";
 import { lockedResult } from "./connections/visibility";
 import { PlatformError, type ConnectionsResult, type DataSource, type Platform, type PlatformAdapter, type Post, type Profile, type Story } from "./types";
@@ -81,7 +83,32 @@ export function getStories(platform: Platform, username: string): Promise<Source
 /** Followers/following honouring each account's own privacy (see connections/index.ts). */
 export async function getConnections(platform: Platform, username: string, kind: "followers" | "following", cursor?: string): Promise<Sourced<ConnectionsResult>> {
   const p = await getProfile(platform, username);
-  if (p.source === "demo") return { data: lockedResult(p.data, kind, "not_supported"), source: "demo", notice: p.notice };
+  if (p.source === "demo") {
+    // Profile scrape blocked — but a logged-in TikTok browser session can still open the public list.
+    if (platform === "tiktok" && hasTikTokSession()) {
+      try {
+        const br = await browserList(username, kind);
+        if (br.items.length) {
+          return {
+            data: {
+              available: true,
+              visibility: "public",
+              total: kind === "followers" ? p.data.followers : p.data.following,
+              items: br.items.slice(0, 5),
+              provider: "tiktok-session",
+              platformUrl: p.data.profileUrl,
+              attempts: [
+                { method: "official_api", ok: false, note: "skipped_demo_profile" },
+                { method: "session", ok: true, note: "ok" },
+              ],
+            },
+            source: "live",
+          };
+        }
+      } catch { /* fall through */ }
+    }
+    return { data: lockedResult(p.data, kind, "not_supported"), source: "demo", notice: p.notice };
+  }
   return { data: await connectionsFor(p.data, kind, cursor), source: "live" };
 }
 

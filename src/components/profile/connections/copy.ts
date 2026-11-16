@@ -41,5 +41,7 @@ export const NOTE_COPY: Record<string, { ar: string; en: string }> = {
   blocked: { ar: "انستقرام رفض الطلب حالياً", en: "Instagram refused the request right now" },
   empty: { ar: "رد فاضي", en: "empty reply" },
   empty_json: { ar: "رد JSON بدون مستخدمين", en: "JSON reply with no users" },
+  browser_empty: { ar: "المتصفّح فتح تيك توك لكن القائمة رجعت فاضي", en: "browser opened TikTok but the list came back empty" },
+  browser_error: { ar: "تعذّر تشغيل متصفح الجلسة على السيرفر", en: "could not start the session browser on the server" },
   error: { ar: "خطأ", en: "error" },
 };

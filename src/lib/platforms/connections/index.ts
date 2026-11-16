@@ -3,14 +3,14 @@ import "server-only";
  * Connections service: privacy gate → every legitimate method in order → cached result.
  *  1. Account private            → locked ("account_private")
  *  2. List hidden by the owner   → locked ("hidden_by_user")
- *  3. TikTok: official Research API → TikTok web list endpoint (plain, unsigned) →
- *     mobile web → TikTok session (if TIKTOK_SESSIONID is set)
+ *  3. TikTok: official Research API → session (TIKTOK_COOKIE + user/list / browser) →
+ *     public web → mobile web
  *     Instagram: server session friendships endpoint
  *  4. Nothing returned → counts + deep link + the list of methods tried and why each failed
  * We never generate TikTok request signatures (X-Bogus/msToken) and never touch private accounts.
  */
 import { tiktokResearch } from "../../env";
-import { cached } from "../../server/cache";
+import { cache, cached } from "../../server/cache";
 import { PlatformError, type ConnectionAttempt, type ConnectionsResult, type Platform, type Profile } from "../types";
 import { researchConnections } from "../tiktok/research/connections";
 import { webList } from "../tiktok/followers/web";
@@ -40,11 +40,12 @@ async function tiktokList(profile: Profile, kind: "followers" | "following", cur
   } else {
     attempts.push({ method: "official_api", ok: false, note: "not_configured" });
   }
-  if (profile.secUid) {
-    // Session first when configured — it carries msToken / tt_csrf_token from a real login.
+  // Browser session only needs the username; HTTP paths need secUid.
+  {
     const methods = (["session", "web_public", "mobile_web"] as const);
     for (const method of methods) {
-      const r = await webList(profile.username, profile.secUid, kind, method);
+      if (method !== "session" && !profile.secUid) continue;
+      const r = await webList(profile.username, profile.secUid || "", kind, method);
       attempts.push(r.attempt);
       if (r.items.length) return { items: r.items, nextCursor: null, provider: `tiktok-${method}`, attempts };
     }
@@ -61,10 +62,13 @@ export async function connectionsFor(profile: Profile, kind: "followers" | "foll
 
   if (profile.platform === "tiktok") {
     try {
-      const [r] = await cached(key, 10 * 60_000, () => tiktokList(profile, kind, cursor));
+      // Cache hits briefly; empty results expire fast so a fresh session cookie can recover.
+      const [r] = await cached(key, 2 * 60_000, () => tiktokList(profile, kind, cursor));
       if (r.items.length) {
         return { available: true, visibility: "public", total, items: r.items.slice(0, SHOW), nextCursor: r.nextCursor, provider: r.provider, platformUrl: listUrl(profile, kind), attempts: r.attempts };
       }
+      // Do not keep empty failures around — delete so the next request retries upstream.
+      cache.delete(key);
       return { ...lockedResult(profile, kind, "provider_required"), attempts: r.attempts };
     } catch (e) {
       if (e instanceof PlatformError && e.code === "private_account") return lockedResult(profile, kind, "hidden_by_user");

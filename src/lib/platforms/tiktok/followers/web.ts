@@ -1,17 +1,23 @@
 import "server-only";
 /**
- * TikTok follower / following list via its own web endpoints.
- * Uses the full logged-in Cookie header (TIKTOK_COOKIE) when available —
- * including msToken (as a query param) and tt_csrf_token (as a header).
- * We never generate X-Bogus / _signature; if TikTok still answers with an empty
- * body, that is reported honestly as needing signing.
+ * TikTok follower / following list with a logged-in session.
+ *
+ * Working order (session method):
+ *  1. Warm the profile with TIKTOK_COOKIE to rotate msToken.
+ *  2. GET www.tiktok.com/api/user/list/?… (scenes 67/21 then 151) — no X-Bogus.
+ *  3. Same on m.tiktok.com if www returns empty.
+ *  4. Headless Chromium: TikTok's own JS signs the request; we intercept JSON.
+ *
+ * Never calls /api/commit/follow/list (returns status_msg "url doesn't match").
  */
 import { cookiesFrom, DESKTOP_UA, httpGet, MOBILE_UA } from "../../../server/http";
-import { cookieValue, hasTikTokSession, tiktokCookieHeader, tiktokWebHeaders } from "../session";
+import { cookieRaw, cookieValue, hasTikTokSession, tiktokCookieHeader, tiktokWebHeaders, CHROME_UA } from "../session";
+import { browserList, lastBrowserListTry } from "./browser";
 import type { Connection, ConnectionAttempt } from "../../types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-const SCENE = { followers: 67, following: 21 } as const;
+const SCENE = { followers: ["67", "151"], following: ["21", "151"] } as const;
+const HOSTS = ["www.tiktok.com", "m.tiktok.com"] as const;
 
 async function anonCookies(username: string, ua: string): Promise<string> {
   try {
@@ -22,48 +28,135 @@ async function anonCookies(username: string, ua: string): Promise<string> {
   }
 }
 
-/** username → ISO country, learned from session list responses (those user objects often include region). */
 const regionHints = new Map<string, string>();
 export function rememberedRegion(username: string): string | undefined {
   return regionHints.get(username.toLowerCase());
 }
 export const regionHintCount = () => regionHints.size;
 export const regionHintSample = () => [...regionHints.entries()].slice(0, 5).map(([u, r]) => ({ u, r }));
-
 let lastUserKeys: string[] = [];
 export const lastListUserKeys = () => lastUserKeys;
 
+function rememberRegion(username: string, region?: string) {
+  if (!region || !/^[A-Z]{2}$/.test(region)) return;
+  regionHints.set(username.toLowerCase(), region);
+  if (regionHints.size > 5000) regionHints.delete(regionHints.keys().next().value as string);
+}
+
 function parseUsers(j: any): Connection[] {
-  const list: any[] = j?.userList ?? j?.followings ?? j?.followers ?? j?.userInfoList ?? [];
-  const users = list.map((x) => x?.user ?? x).filter((u) => u?.uniqueId || u?.unique_id);
-  if (users[0]) {
-    lastUserKeys = Object.keys(users[0]).sort();
-    // Also peek one level into nested objects for region-ish fields (key names only).
-    for (const [k, v] of Object.entries(users[0])) {
-      if (v && typeof v === "object" && !Array.isArray(v)) {
-        for (const nk of Object.keys(v as object)) {
-          if (/region|country|location|lang/i.test(nk)) lastUserKeys.push(`${k}.${nk}`);
-        }
-      }
-    }
-  }
-  return users.map((u) => {
+  const list: any[] = j?.userList ?? [];
+  const users = list.map((x: any) => x?.user ?? x).filter((u: any) => u?.uniqueId || u?.unique_id);
+  if (users[0]) lastUserKeys = Object.keys(users[0]).sort();
+  return users.map((u: any) => {
     const username = u.uniqueId || u.unique_id;
-    const region =
-      (typeof u.region === "string" && /^[A-Za-z]{2}$/.test(u.region) && u.region.toUpperCase()) ||
-      (typeof u.country === "string" && /^[A-Za-z]{2}$/.test(u.country) && u.country.toUpperCase()) ||
-      undefined;
-    if (region) {
-      regionHints.set(String(username).toLowerCase(), region);
-      if (regionHints.size > 5000) regionHints.delete(regionHints.keys().next().value as string);
-    }
+    const region = typeof u.region === "string" && /^[A-Za-z]{2}$/.test(u.region) ? u.region.toUpperCase() : undefined;
+    if (region) rememberRegion(String(username), region);
     return {
       username,
       displayName: u.nickname || username,
-      avatarUrl: u.avatarThumb || u.avatarMedium || u.avatar_thumb?.url_list?.[0] || "",
+      avatarUrl: u.avatarThumb || u.avatarMedium || "",
       verified: !!u.verified,
     };
   });
+}
+
+/** Merge Set-Cookie into an existing Cookie header (last-wins per name). */
+function mergeCookie(base: string, setCookieHeader: string): string {
+  if (!setCookieHeader) return base;
+  const map = new Map<string, string>();
+  for (const part of base.split(";")) {
+    const s = part.trim();
+    if (!s.includes("=")) continue;
+    const i = s.indexOf("=");
+    map.set(s.slice(0, i).trim(), s.slice(i + 1).trim());
+  }
+  for (const part of setCookieHeader.split(";")) {
+    const s = part.trim();
+    if (!s.includes("=")) continue;
+    const i = s.indexOf("=");
+    const name = s.slice(0, i).trim();
+    const val = s.slice(i + 1).trim();
+    if (name && val && !/^(domain|path|expires|max-age|secure|httponly|samesite)$/i.test(name)) map.set(name, val);
+  }
+  return [...map.entries()].map(([k, v]) => `${k}=${v}`).join("; ");
+}
+
+/** Load the profile with the session cookie; capture rotated msToken from Set-Cookie. */
+async function refreshSession(username: string): Promise<{ msToken: string; cookie: string; verifyFp: string; deviceId: string; region: string }> {
+  let cookie = tiktokCookieHeader();
+  let ms = cookieValue("msToken"); // decode-once if percent-encoded
+  const verifyFp = cookieRaw("s_v_web_id");
+  let deviceId = cookieRaw("ttwid") || verifyFp;
+  let region = (cookieValue("store-country-code") || "US").toUpperCase();
+  try {
+    const res = await httpGet(`https://www.tiktok.com/@${encodeURIComponent(username)}?lang=en`, {
+      headers: { "user-agent": CHROME_UA, cookie, accept: "text/html", referer: "https://www.tiktok.com/" },
+      retries: 0,
+      timeoutMs: 12000,
+    });
+    const set = cookiesFrom(res.headers);
+    if (set) {
+      cookie = mergeCookie(cookie, set);
+      const m = set.match(/(?:^|;\s*)msToken=([^;]+)/);
+      if (m) {
+        // Use Set-Cookie value as-is for the Cookie header; decode-once for the query param.
+        const raw = m[1];
+        ms = /%[0-9A-Fa-f]{2}/.test(raw) ? (() => { try { return decodeURIComponent(raw); } catch { return raw; } })() : raw;
+      }
+      const did = set.match(/(?:^|;\s*)ttwid=([^;]+)/);
+      if (did) deviceId = did[1];
+    }
+    const um = res.text.match(/id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
+    if (um) {
+      try {
+        const u = JSON.parse(um[1])?.__DEFAULT_SCOPE__?.["webapp.user-detail"]?.userInfo?.user;
+        if (typeof u?.region === "string" && /^[A-Za-z]{2}$/.test(u.region)) {
+          rememberRegion(username, u.region.toUpperCase());
+          region = u.region.toUpperCase();
+        }
+      } catch { /* ignore */ }
+    }
+  } catch { /* keep existing */ }
+  return { msToken: ms, cookie, verifyFp, deviceId, region };
+}
+
+function buildListUrl(
+  host: string,
+  secUid: string,
+  scene: string,
+  opts: { msToken: string; deviceId: string; verifyFp: string; region: string; mobile: boolean },
+): string {
+  const qs = new URLSearchParams({
+    aid: "1988",
+    app_language: "en",
+    app_name: "tiktok_web",
+    browser_language: "en-US",
+    browser_name: "Mozilla",
+    browser_online: "true",
+    browser_platform: opts.mobile ? "iPhone" : "Win32",
+    channel: "tiktok_web",
+    cookie_enabled: "true",
+    count: "30",
+    device_platform: opts.mobile ? "web_mobile" : "web_pc",
+    focus_state: "true",
+    from_page: "user",
+    history_len: "3",
+    is_fullscreen: "false",
+    is_page_visible: "true",
+    maxCursor: "0",
+    minCursor: "0",
+    os: opts.mobile ? "ios" : "windows",
+    region: opts.region,
+    scene,
+    screen_height: opts.mobile ? "844" : "1080",
+    screen_width: opts.mobile ? "390" : "1920",
+    secUid,
+    webcast_language: "en",
+  });
+  if (opts.msToken) qs.set("msToken", opts.msToken);
+  if (opts.deviceId) qs.set("device_id", opts.deviceId);
+  if (opts.verifyFp) qs.set("verifyFp", opts.verifyFp);
+  return `https://${host}/api/user/list/?${qs}`;
 }
 
 async function callList(
@@ -78,59 +171,27 @@ async function callList(
     if (!body.startsWith("{")) return { items: [], attempt: { method, ok: false, note: `http_${res.status}` }, status: res.status, bodyLen: body.length };
     const j = JSON.parse(body);
     const items = parseUsers(j);
-    const note = items.length ? "ok" : j?.statusCode !== undefined ? `status_${j.statusCode}` : j?.status_msg ? String(j.status_msg).slice(0, 40) : "empty_json";
+    const statusMsg = String(j?.status_msg || j?.statusMsg || "").slice(0, 60);
+    const note = items.length ? "ok" : statusMsg || (j?.statusCode !== undefined ? `status_${j.statusCode}` : "empty_json");
     return { items, attempt: { method, ok: items.length > 0, note }, status: res.status, bodyLen: body.length };
   } catch (e) {
     return { items: [], attempt: { method, ok: false, note: (e as Error).message?.slice(0, 40) ?? "error" }, status: 0, bodyLen: 0 };
   }
 }
 
-function listUrls(host: string, secUid: string, kind: "followers" | "following", msToken: string, mobile: boolean): string[] {
-  const base = new URLSearchParams({
-    aid: "1988",
-    app_language: "en",
-    app_name: "tiktok_web",
-    browser_language: "en-US",
-    browser_name: "Mozilla",
-    browser_online: "true",
-    browser_platform: "Win32",
-    browser_version: "5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-    channel: "tiktok_web",
-    cookie_enabled: "true",
-    count: "30",
-    device_id: cookieValue("ttwid") || cookieValue("s_v_web_id") || "",
-    device_platform: mobile ? "web_mobile" : "web_pc",
-    focus_state: "true",
-    from_page: "user",
-    history_len: "3",
-    is_fullscreen: "false",
-    is_page_visible: "true",
-    maxCursor: "0",
-    minCursor: "0",
-    os: "windows",
-    priority_region: cookieValue("store-country-code") || "",
-    referer: "",
-    region: (cookieValue("store-country-code") || "US").toUpperCase(),
-    scene: String(SCENE[kind]),
-    screen_height: "1080",
-    screen_width: "1920",
-    secUid,
-    tz_name: "America/Toronto",
-    webcast_language: "en",
-  });
-  if (msToken) base.set("msToken", msToken);
-  // Drop empty values so TikTok doesn't reject on blank device_id.
-  [...base.keys()].forEach((k) => { if (!base.get(k)) base.delete(k); });
-  const q = base.toString();
-  return [
-    `https://${host}/api/user/list/?${q}`,
-    `https://${host}/api/commit/follow/list/?${q}&type=${kind === "followers" ? "1" : "2"}`,
-  ];
-}
-
-/** Last session attempt detail (status / body length only — never cookies), for /api/health?ig=1. */
-let lastSessionTry: { at: string; status: number; bodyLen: number; note: string; urlHost: string } | null = null;
-export const lastFollowerTry = () => lastSessionTry;
+let lastSessionTry: { at: string; status: number; bodyLen: number; note: string; urlHost: string; via?: string; scene?: string } | null = null;
+export const lastFollowerTry = () =>
+  lastSessionTry ??
+  (lastBrowserListTry()
+    ? {
+        at: lastBrowserListTry()!.at,
+        status: lastBrowserListTry()!.status ?? 0,
+        bodyLen: lastBrowserListTry()!.bodyLen ?? 0,
+        note: lastBrowserListTry()!.note,
+        urlHost: "browser",
+        via: "browser",
+      }
+    : null);
 
 export async function webList(
   username: string,
@@ -138,30 +199,76 @@ export async function webList(
   kind: "followers" | "following",
   method: ConnectionAttempt["method"],
 ): Promise<{ items: Connection[]; attempt: ConnectionAttempt }> {
-  const mobile = method === "mobile_web";
   const referer = `https://www.tiktok.com/@${username}`;
 
   if (method === "session") {
     if (!hasTikTokSession()) return { items: [], attempt: { method, ok: false, note: "not_configured" } };
-    const msToken = cookieValue("msToken");
-    const headers = tiktokWebHeaders(referer);
-    for (const host of ["www.tiktok.com", "m.tiktok.com"]) {
-      for (const url of listUrls(host, secUid, kind, msToken, host.startsWith("m."))) {
-        const r = await callList(url, headers, method);
-        lastSessionTry = { at: new Date().toISOString(), status: r.status, bodyLen: r.bodyLen, note: r.attempt.note, urlHost: host };
-        // Log only the classification — never the cookie or URL query (msToken lives there).
-        console.warn(`[tiktok-followers] session ${host} status=${r.status} body=${r.bodyLen} note=${r.attempt.note}`);
-        if (r.items.length) return { items: r.items, attempt: r.attempt };
-        // Empty body = signing wall; keep trying other hosts/paths once, then stop.
-        if (r.attempt.note === "empty_unsigned") continue;
+
+    // A) HTTP user/list with refreshed session — www then m, scenes 67/21 then 151.
+    if (secUid) {
+      const warm = await refreshSession(username);
+      const headers = tiktokWebHeaders(referer, warm.cookie);
+      for (const host of HOSTS) {
+        const mobile = host.startsWith("m.");
+        for (const scene of SCENE[kind]) {
+          const url = buildListUrl(host, secUid, scene, {
+            msToken: warm.msToken,
+            deviceId: warm.deviceId,
+            verifyFp: warm.verifyFp,
+            region: warm.region,
+            mobile,
+          });
+          const r = await callList(url, headers, method);
+          lastSessionTry = {
+            at: new Date().toISOString(),
+            status: r.status,
+            bodyLen: r.bodyLen,
+            note: r.attempt.note,
+            urlHost: host,
+            via: "http",
+            scene,
+          };
+          console.warn(`[tiktok-followers] http ${host} scene=${scene} status=${r.status} body=${r.bodyLen} note=${r.attempt.note}`);
+          if (r.items.length) return { items: r.items, attempt: r.attempt };
+        }
       }
     }
+
+    // B) Chromium — TikTok page JS adds the signature we refuse to reverse-engineer.
+    try {
+      const br = await Promise.race([
+        browserList(username, kind),
+        new Promise<Awaited<ReturnType<typeof browserList>>>((_, rej) =>
+          setTimeout(() => rej(new Error("browser_timeout")), 28000),
+        ),
+      ]);
+      lastSessionTry = {
+        at: new Date().toISOString(),
+        status: br.status ?? 0,
+        bodyLen: br.bodyLen ?? 0,
+        note: br.note,
+        urlHost: "browser",
+        via: "browser",
+      };
+      if (br.region) rememberRegion(username, br.region);
+      if (br.items.length) return { items: br.items, attempt: { method, ok: true, note: "ok" } };
+    } catch (e) {
+      lastSessionTry = {
+        at: new Date().toISOString(),
+        status: 0,
+        bodyLen: 0,
+        note: (e as Error).message?.slice(0, 40) ?? "browser_error",
+        urlHost: "browser",
+        via: "browser",
+      };
+    }
+
     return { items: [], attempt: { method, ok: false, note: lastSessionTry?.note ?? "empty_unsigned" } };
   }
 
-  // Anonymous / mobile-web paths (no signed-in cookie).
+  const mobile = method === "mobile_web";
   const ua = mobile ? MOBILE_UA : DESKTOP_UA;
-  const host = mobile ? "m.tiktok.com" : "www.tiktok.com";
+  if (!secUid) return { items: [], attempt: { method, ok: false, note: "empty_unsigned" } };
   const cookie = await anonCookies(username, ua);
   const qs = new URLSearchParams({
     aid: "1988",
@@ -171,10 +278,10 @@ export async function webList(
     count: "30",
     maxCursor: "0",
     minCursor: "0",
-    scene: String(SCENE[kind]),
+    scene: SCENE[kind][0],
     secUid,
   });
-  const r = await callList(`https://${host}/api/user/list/?${qs}`, {
+  const r = await callList(`https://www.tiktok.com/api/user/list/?${qs}`, {
     "user-agent": ua,
     referer,
     accept: "application/json",
@@ -183,5 +290,8 @@ export async function webList(
   return { items: r.items, attempt: r.attempt };
 }
 
-/** Expose whether a full Cookie header is configured (boolean only). */
-export const sessionConfigured = () => ({ cookie: Boolean(tiktokCookieHeader()), hasMsToken: Boolean(cookieValue("msToken")), hasCsrf: Boolean(cookieValue("tt_csrf_token")) });
+export const sessionConfigured = () => ({
+  cookie: hasTikTokSession(),
+  hasMsToken: Boolean(cookieRaw("msToken")),
+  hasCsrf: Boolean(cookieRaw("tt_csrf_token")),
+});

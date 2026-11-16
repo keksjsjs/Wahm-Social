@@ -4,6 +4,7 @@ import { env, billingMode } from "@/lib/env";
 import { lastIgLookup } from "@/lib/platforms/instagram/session/diagnostics";
 import { researchStatus } from "@/lib/platforms/connections";
 import { lastFollowerTry, sessionConfigured, regionHintCount, regionHintSample, lastListUserKeys } from "@/lib/platforms/tiktok/followers/web";
+import { lastBrowserListTry } from "@/lib/platforms/tiktok/followers/browser";
 import { regionTry } from "@/lib/platforms/tiktok/region";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,7 @@ export function GET(req: NextRequest) {
           tiktokCookie: Boolean(env.tiktokCookie),
           tiktokSessionFlags: sessionConfigured(),
           tiktokLastFollowerTry: lastFollowerTry(),
+          tiktokLastBrowserTry: lastBrowserListTry(),
           tiktokLastRegionTry: regionTry(),
           tiktokRegionHints: { count: regionHintCount(), sample: regionHintSample(), userKeys: lastListUserKeys() },
           instagramCookies: { csrftoken: !!env.igCsrfToken, ds_user_id: !!env.igDsUserId, mid: !!env.igMid, datr: !!env.igDatr },
