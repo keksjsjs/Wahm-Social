@@ -36,6 +36,8 @@ services:
         sync: false
       - key: TIKTOK_CLIENT_SECRET
         sync: false
+      - key: TIKTOK_SESSIONID
+        sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
       - key: STRIPE_PRICE_PRO_MONTHLY

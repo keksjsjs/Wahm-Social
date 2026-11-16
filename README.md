@@ -77,3 +77,12 @@ The adapter tries: session web API → session app API → anonymous → public 
 and serves the last good copy for 24h when blocked. Set `SCRAPER_PROXY=http://user:pass@host:port`
 (residential proxy) to route all Instagram requests through a clean IP. `/api/health?ig=1` shows the last
 lookup's per-step HTTP statuses (no cookie values).
+
+## Followers lists (method chain)
+TikTok: official Research API → TikTok web list endpoint (plain request) → mobile web → `TIKTOK_SESSIONID` session.
+No request-signature (X-Bogus/msToken) generation, ever. The followers tab shows the latest 5 when any method returns data,
+otherwise five locked slots and the exact methods tried with their outcome.
+Instagram: server session `friendships/{id}/followers` for public accounts.
+
+## TikTok account location
+Country = `locationCreated` of the latest public videos (where they were posted), plus last tagged place and account language.

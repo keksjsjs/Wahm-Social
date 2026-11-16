@@ -14,13 +14,24 @@ import { igJson, type IgAttempt } from "./session/api";
 import { recordIg } from "./session/diagnostics";
 import { PlatformError, type PlatformAdapter, type Post, type Profile, type Story } from "../types";
 import { parseEmbedHtml, parseInstagramRef, parseReelsMedia, parseWebProfile } from "./parser";
-import { fetchPreview } from "./preview/fetch";
+import { fetchPreview, PREVIEW_TRIES } from "./preview/fetch";
 import { parseOgPost, parseOgProfile } from "./preview/parse";
+import { parseV1Media, parseV1User, pickSearchUser } from "./session/v1";
 
 type WebProfile = NonNullable<ReturnType<typeof parseWebProfile>>;
 type Lookup = { found: WebProfile } | { missing: true; attempts: IgAttempt[] } | { blocked: true; attempts: IgAttempt[] };
 
-/** Try every configured client in order: session (web), session (app API), anonymous. */
+/** username → numeric user id, learned from any successful step (lets later calls skip the search). */
+const pkCache = new Map<string, string>();
+
+/**
+ * Fallback chain (first success wins; every step is recorded for /api/health?ig=1):
+ *  1. web_profile_info  — www, server session
+ *  2. web_profile_info  — i.instagram.com, server session (app headers)
+ *  3. web_profile_info  — www, anonymous
+ *  4. search → users/{pk}/info — session (a different API family, often not throttled together)
+ * All steps go through SCRAPER_PROXY when it is set. Link preview + last-good copy follow in getProfile.
+ */
 async function lookup(username: string): Promise<Lookup> {
   const q = encodeURIComponent(username);
   const plan: [string, IgClient][] = [];
@@ -37,13 +48,105 @@ async function lookup(username: string): Promise<Lookup> {
     if (!r.ok) continue;
     const parsed = parseWebProfile(r.json);
     if (parsed) {
+      pkCache.set(username.toLowerCase(), parsed.profile.id);
       recordIg(username, attempts, "ok");
       return { found: parsed };
     }
     r.attempt.outcome = "empty";
     sawEmpty = true;
   }
+  if (hasSession()) {
+    const info = await infoBySearch(username, attempts);
+    if (info) {
+      recordIg(username, attempts, "ok");
+      return { found: { profile: info, posts: [] } };
+    }
+  }
   return sawEmpty ? { missing: true, attempts } : { blocked: true, attempts };
+}
+
+async function infoBySearch(username: string, attempts: IgAttempt[]): Promise<Profile | null> {
+  const q = encodeURIComponent(username);
+  let pk = pkCache.get(username.toLowerCase());
+  if (!pk) {
+    const searches: [string, IgClient][] = [
+      [`https://www.instagram.com/web/search/topsearch/?context=blended&query=${q}&include_reel=false`, "web-session"],
+      [`https://i.instagram.com/api/v1/users/search/?q=${q}&count=10`, "app-session"],
+    ];
+    for (const [url, client] of searches) {
+      const r = await igJson(url, client);
+      attempts.push(r.attempt);
+      const u = r.ok ? pickSearchUser(r.json, username) : null;
+      if (u?.pk || u?.pk_id || u?.id) {
+        pk = String(u.pk ?? u.pk_id ?? u.id);
+        pkCache.set(username.toLowerCase(), pk);
+        break;
+      }
+      if (r.ok) r.attempt.outcome = "empty";
+    }
+  }
+  if (!pk) return null;
+  for (const [url, client] of [
+    [`https://i.instagram.com/api/v1/users/${pk}/info/`, "app-session"],
+    [`https://www.instagram.com/api/v1/users/${pk}/info/`, "web-session"],
+  ] as [string, IgClient][]) {
+    const r = await igJson(url, client, `https://www.instagram.com/${q}/`);
+    attempts.push(r.attempt);
+    const p = r.ok ? parseV1User(r.json?.user) : null;
+    if (p) return p;
+  }
+  return null;
+}
+
+/** Instagram shortcodes are base64url-encoded numeric media ids. */
+function shortcodeToId(code: string): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+  let id = BigInt(0);
+  for (const ch of code.slice(0, 11)) id = id * BigInt(64) + BigInt(alphabet.indexOf(ch));
+  return id.toString();
+}
+
+/** Public oEmbed (thumbnail + author) — last resort for a post cover. */
+async function oembedPost(shortcode: string): Promise<Post | null> {
+  try {
+    const res = await httpGet(`https://www.instagram.com/api/v1/oembed/?url=${encodeURIComponent(`https://www.instagram.com/p/${shortcode}/`)}`, {
+      retries: 0,
+      proxy: true,
+      headers: { accept: "application/json" },
+    });
+    if (res.status !== 200 || !res.text.startsWith("{")) return null;
+    const j = JSON.parse(res.text) as { thumbnail_url?: string; author_name?: string; title?: string };
+    if (!j.thumbnail_url) return null;
+    return {
+      platform: "instagram",
+      id: shortcode,
+      shortcode,
+      author: j.author_name ?? "",
+      caption: j.title ?? "",
+      type: "image",
+      cover: j.thumbnail_url,
+      media: [{ type: "image", url: j.thumbnail_url }],
+      stats: {},
+      hashtags: [],
+      url: `https://www.instagram.com/p/${shortcode}/`,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Recent posts via feed/user/{pk} when web_profile_info is throttled. */
+async function feedByPk(username: string): Promise<Post[] | null> {
+  const pk = pkCache.get(username.toLowerCase());
+  if (!pk || !hasSession()) return null;
+  for (const [url, client] of [
+    [`https://i.instagram.com/api/v1/feed/user/${pk}/?count=12`, "app-session"],
+    [`https://www.instagram.com/api/v1/feed/user/${pk}/?count=12`, "web-session"],
+  ] as [string, IgClient][]) {
+    const r = await igJson(url, client, `https://www.instagram.com/${username}/`);
+    if (r.ok && Array.isArray(r.json?.items)) return r.json.items.map((it: unknown) => parseV1Media(it, username));
+  }
+  return null;
 }
 
 async function webProfile(username: string): Promise<WebProfile> {
@@ -66,8 +169,8 @@ async function webProfile(username: string): Promise<WebProfile> {
  */
 async function previewProfile(username: string): Promise<Profile | "missing" | null> {
   let bare = 0;
-  for (let i = 0; i < 3; i++) {
-    if (i) await new Promise((r) => setTimeout(r, 500 * i));
+  for (let i = 0; i < PREVIEW_TRIES; i++) {
+    if (i) await new Promise((r) => setTimeout(r, 300 * i));
     try {
       const p = parseOgProfile(await fetchPreview(`/${encodeURIComponent(username)}/`, i), username);
       if (p) return p;
@@ -76,7 +179,7 @@ async function previewProfile(username: string): Promise<Profile | "missing" | n
       if (e instanceof PlatformError && e.code === "not_found") return "missing";
     }
   }
-  return bare === 3 ? "missing" : null;
+  return bare >= 3 && bare === PREVIEW_TRIES ? "missing" : null;
 }
 
 /** Last good profile per username — served when Instagram temporarily blocks the server. */
@@ -104,29 +207,55 @@ export const instagram: PlatformAdapter = {
   },
 
   async getPosts(username, opts): Promise<Post[]> {
-    const { profile, posts } = await webProfile(username);
-    if (profile.isPrivate) throw new PlatformError("private_account", "This account is private", 403);
-    return posts.slice(0, opts?.limit ?? 12);
+    const limit = opts?.limit ?? 12;
+    try {
+      const { profile, posts } = await webProfile(username);
+      if (profile.isPrivate) throw new PlatformError("private_account", "This account is private", 403);
+      if (posts.length) return posts.slice(0, limit);
+    } catch (e) {
+      if (e instanceof PlatformError && (e.code === "private_account" || e.code === "not_found")) throw e;
+    }
+    const feed = await feedByPk(username);
+    if (feed) return feed.slice(0, limit);
+    throw new PlatformError("blocked", "Instagram is limiting post listings from this server right now.", 503);
   },
 
+  /**
+   * Post chain: embed page → session media/{id}/info (full video URLs) → link preview → oEmbed thumbnail.
+   */
   async getPost(idOrUrl): Promise<Post> {
     const { shortcode } = parseInstagramRef(idOrUrl);
     if (!shortcode) throw new PlatformError("invalid_input", "Paste a valid Instagram post or reel link", 400);
-    const res = await httpGet(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, { retries: 0, proxy: true });
-    if (res.status === 404) throw new PlatformError("not_found", "Post not found or not public", 404);
-    const post = parseEmbedHtml(res.text, shortcode);
-    if (post) return post;
-    // Fallback: public link-preview (cover image / video, likes, caption).
-    let preview = null as ReturnType<typeof parseOgPost>;
-    for (let i = 0; i < 3 && !preview; i++) {
+    try {
+      const res = await httpGet(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, { retries: 0, proxy: true });
+      if (res.status === 404) throw new PlatformError("not_found", "Post not found or not public", 404);
+      const post = parseEmbedHtml(res.text, shortcode);
+      if (post) return post;
+    } catch (e) {
+      if (e instanceof PlatformError && e.code === "not_found") throw e;
+    }
+    if (hasSession()) {
+      const id = shortcodeToId(shortcode);
+      for (const [url, client] of [
+        [`https://i.instagram.com/api/v1/media/${id}/info/`, "app-session"],
+        [`https://www.instagram.com/api/v1/media/${id}/info/`, "web-session"],
+      ] as [string, IgClient][]) {
+        const r = await igJson(url, client, `https://www.instagram.com/p/${shortcode}/`);
+        const it = r.ok ? r.json?.items?.[0] : null;
+        if (it) return parseV1Media(it, it.user?.username ?? "");
+      }
+    }
+    for (let i = 0; i < PREVIEW_TRIES; i++) {
       try {
-        preview = parseOgPost(await fetchPreview(`/p/${shortcode}/`, i), shortcode);
+        const preview = parseOgPost(await fetchPreview(`/p/${shortcode}/`, i), shortcode);
+        if (preview) return preview;
       } catch (e) {
         if (e instanceof PlatformError && e.code === "not_found") throw e;
       }
     }
-    if (!preview) throw new PlatformError("blocked", "Instagram did not return this post's media. It may be private or rate-limited.", 503);
-    return preview;
+    const o = await oembedPost(shortcode);
+    if (o) return o;
+    throw new PlatformError("blocked", "Instagram did not return this post's media right now (rate-limited). Please try again shortly.", 503);
   },
 
   async getStories(username): Promise<Story[]> {

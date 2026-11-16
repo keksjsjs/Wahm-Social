@@ -3,6 +3,7 @@ import type { Dict, Locale } from "@/lib/i18n";
 import { compact, date } from "@/lib/format";
 import { Avatar, Badge, PlatformIcon, VerifiedIcon } from "../ui";
 import { ProfileActions } from "./ProfileActions";
+import { AccountLocation } from "./AccountLocation";
 
 export function ProfileHeader({ p, t, locale, canPro }: { p: Profile; t: Dict; locale: Locale; canPro: boolean }) {
   const stats = [
@@ -29,6 +30,7 @@ export function ProfileHeader({ p, t, locale, canPro }: { p: Profile; t: Dict; l
           </div>
           {p.category && <div className="mt-1 text-sm text-accent-600 dark:text-accent-300">{p.category}</div>}
           {p.bio && <p className="mt-4 whitespace-pre-line text-sm leading-7 text-ink-2">{p.bio}</p>}
+          {p.location && <AccountLocation loc={p.location} locale={locale} />}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-ink-4 sm:justify-start">
             {p.createdAt && (
               <span>

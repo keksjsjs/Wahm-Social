@@ -24,9 +24,21 @@ export const REASON_COPY: Record<ConnectionsReason, { ar: [string, string]; en: 
   },
 };
 
-export const RELATED_COPY = {
-  recent_commenters: {
-    ar: ["آخر المتفاعلين مع الحساب", "أحدث الأشخاص الذين علّقوا علناً على آخر فيديوهات الحساب — تفاعل عام وليس بالضرورة قائمة المتابعين."],
-    en: ["Latest people engaging", "The newest people who publicly commented on this account's latest videos — public engagement, not necessarily the follower list."],
-  },
-} as const;
+export const METHOD_COPY: Record<string, { ar: string; en: string }> = {
+  official_api: { ar: "واجهة تيك توك الرسمية (Research API)", en: "TikTok official API (Research API)" },
+  web_public: { ar: "قائمة المتابعين على موقع تيك توك", en: "TikTok website followers list" },
+  mobile_web: { ar: "قائمة المتابعين على نسخة الجوال", en: "TikTok mobile-web followers list" },
+  session: { ar: "جلسة تيك توك مسجّلة على السيرفر", en: "Signed-in TikTok session on the server" },
+  instagram_session: { ar: "جلسة انستقرام على السيرفر", en: "Instagram server session" },
+};
+
+export const NOTE_COPY: Record<string, { ar: string; en: string }> = {
+  ok: { ar: "نجح", en: "worked" },
+  not_configured: { ar: "غير مفعّلة", en: "not configured" },
+  not_approved: { ar: "مفاتيح التطبيق غير معتمدة لهذه الواجهة (Login Kit فقط)", en: "app keys aren't approved for it (Login Kit only)" },
+  empty_unsigned: { ar: "تيك توك رجّع رد فاضي — يطلب توقيع طلبات خاص بتطبيقه ولا نتجاوزه", en: "TikTok returned an empty reply — it requires its own request signing, which we don't bypass" },
+  needs_full_profile: { ar: "يحتاج بيانات الحساب الكاملة (انستقرام يحدّ السيرفر حالياً)", en: "needs the full profile (Instagram is throttling the server)" },
+  blocked: { ar: "انستقرام رفض الطلب حالياً", en: "Instagram refused the request right now" },
+  empty: { ar: "رد فاضي", en: "empty reply" },
+  error: { ar: "خطأ", en: "error" },
+};

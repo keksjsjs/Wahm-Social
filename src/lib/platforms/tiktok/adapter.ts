@@ -54,6 +54,14 @@ export const tiktok: PlatformAdapter & {
     if (status === 10221 || status === 10202 || status === 404 || !profile) {
       throw new PlatformError("not_found", `@${username} was not found on TikTok`, 404);
     }
+    if (!profile.isPrivate) {
+      // Country from the latest public videos (bounded so the profile never waits long).
+      const loc = await Promise.race([
+        import("./location").then((m) => m.accountLocation(profile.username, profile.language)).catch(() => undefined),
+        new Promise<undefined>((r) => setTimeout(() => r(undefined), 9000)),
+      ]);
+      profile.location = loc ?? (profile.language ? { recent: [], sample: 0, language: profile.language } : undefined);
+    }
     return profile;
   },
 

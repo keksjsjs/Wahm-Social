@@ -31,6 +31,9 @@ export interface Profile {
   hasStory?: boolean;
   /** TikTok: 1 = following list visible to everyone. */
   followingVisibility?: number;
+  location?: ProfileLocation;
+  /** TikTok stable public id used by its web endpoints. */
+  secUid?: string;
   /** Profile data came from the platform's public link-preview (limited fields). */
   preview?: boolean;
   profileUrl: string;
@@ -67,6 +70,21 @@ export interface Post {
   hashtags: string[];
   music?: { title: string; author: string; url?: string };
   url: string;
+  /** TikTok: ISO country where the video was posted, and a tagged place (if any). */
+  location?: { country?: string; place?: string };
+}
+
+/** Where a public account posts from, derived from its own public videos. */
+export interface ProfileLocation {
+  /** ISO-3166 alpha-2 country of the most recent public video. */
+  current?: string;
+  /** Most recent tagged place name, if the creator tagged one. */
+  place?: string;
+  /** Countries seen across the sampled recent videos, most frequent first. */
+  recent: { code: string; count: number }[];
+  sample: number;
+  /** Language set on the account / used in captions. */
+  language?: string;
 }
 
 export interface Story {
@@ -91,10 +109,11 @@ export interface Connection {
   note?: string;
 }
 
-/** Publicly visible accounts related to a profile when the real list can't be read officially. */
-export interface RelatedAccounts {
-  kind: "recent_commenters";
-  items: Connection[];
+export interface ConnectionAttempt {
+  method: "official_api" | "web_public" | "mobile_web" | "session" | "instagram_session";
+  ok: boolean;
+  /** Short machine-readable reason, e.g. "not_approved", "empty_unsigned", "not_configured". */
+  note: string;
 }
 
 export type ConnectionsReason =
@@ -115,8 +134,8 @@ export interface ConnectionsResult {
   provider?: string;
   /** Deep link to view the list on the platform itself. */
   platformUrl?: string;
-  /** Fallback: recently active public accounts (clearly labelled, not claimed to be followers). */
-  related?: RelatedAccounts;
+  /** Every method tried to read the real list, in order, with its outcome (shown to the user). */
+  attempts?: ConnectionAttempt[];
 }
 
 export interface Envelope<T> {

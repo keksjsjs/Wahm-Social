@@ -1,18 +1,19 @@
 import "server-only";
 /**
- * Connections service: privacy gate → provider → cached result.
- * Order of checks (per account):
+ * Connections service: privacy gate → every legitimate method in order → cached result.
  *  1. Account private            → locked ("account_private")
  *  2. List hidden by the owner   → locked ("hidden_by_user")
- *  3. Official / session provider → real list (TikTok Research API, Instagram server session)
- *  4. Otherwise                  → counts + deep link, plus (TikTok followers) the newest
- *                                  public commenters, clearly labelled as such
+ *  3. TikTok: official Research API → TikTok web list endpoint (plain, unsigned) →
+ *     mobile web → TikTok session (if TIKTOK_SESSIONID is set)
+ *     Instagram: server session friendships endpoint
+ *  4. Nothing returned → counts + deep link + the list of methods tried and why each failed
+ * We never generate TikTok request signatures (X-Bogus/msToken) and never touch private accounts.
  */
 import { tiktokResearch } from "../../env";
 import { cached } from "../../server/cache";
-import { PlatformError, type ConnectionsResult, type Platform, type Profile } from "../types";
+import { PlatformError, type ConnectionAttempt, type ConnectionsResult, type Platform, type Profile } from "../types";
 import { researchConnections } from "../tiktok/research/connections";
-import { recentFans } from "../tiktok/fans";
+import { webList } from "../tiktok/followers/web";
 import { igFriendships } from "../instagram/session/friendships";
 import { hasSession } from "../instagram/session/cookies";
 import { lockedResult, listUrl, visibilityOf } from "./visibility";
@@ -22,45 +23,68 @@ let lastResearchError: string | null = null;
 /** Last TikTok Research API error message (no secrets), for /api/health?ig=1. */
 export const researchStatus = () => (tiktokResearch.enabled ? lastResearchError ?? "configured" : "not_configured");
 
+const SHOW = 5;
+
+async function tiktokList(profile: Profile, kind: "followers" | "following", cursor?: string) {
+  const attempts: ConnectionAttempt[] = [];
+  if (tiktokResearch.enabled) {
+    try {
+      const r = await researchConnections(profile.username, kind, cursor);
+      attempts.push({ method: "official_api", ok: r.items.length > 0, note: r.items.length ? "ok" : "empty" });
+      if (r.items.length) return { items: r.items, nextCursor: r.nextCursor, provider: "tiktok-research-api", attempts };
+    } catch (e) {
+      lastResearchError = (e as Error).message?.slice(0, 160) ?? "error";
+      if (e instanceof PlatformError && e.code === "private_account") throw e;
+      attempts.push({ method: "official_api", ok: false, note: /token|scope|permission|access/i.test(lastResearchError) ? "not_approved" : "error" });
+    }
+  } else {
+    attempts.push({ method: "official_api", ok: false, note: "not_configured" });
+  }
+  if (profile.secUid) {
+    for (const method of ["web_public", "mobile_web", "session"] as const) {
+      const r = await webList(profile.username, profile.secUid, kind, method);
+      attempts.push(r.attempt);
+      if (r.items.length) return { items: r.items, nextCursor: null, provider: `tiktok-${method}`, attempts };
+    }
+  }
+  return { items: [], nextCursor: null, provider: undefined, attempts };
+}
+
 export async function connectionsFor(profile: Profile, kind: "followers" | "following", cursor?: string): Promise<ConnectionsResult> {
   const vis = visibilityOf(profile, kind);
   if (vis === "private") return lockedResult(profile, kind, "account_private");
   if (vis === "hidden") return lockedResult(profile, kind, "hidden_by_user");
   const total = kind === "followers" ? profile.followers : profile.following;
-  const key = `conn:${profile.platform}:${profile.username}:${kind}`;
+  const key = `conn:${profile.platform}:${profile.username}:${kind}:${cursor ?? 0}`;
 
-  if (profile.platform === "tiktok" && tiktokResearch.enabled) {
+  if (profile.platform === "tiktok") {
     try {
-      const [r] = await cached(`${key}:${cursor ?? 0}`, TTL, () => researchConnections(profile.username, kind, cursor));
-      return { available: true, visibility: "public", total, items: r.items, nextCursor: r.nextCursor, provider: "tiktok-research-api", platformUrl: listUrl(profile, kind) };
+      const [r] = await cached(key, 10 * 60_000, () => tiktokList(profile, kind, cursor));
+      if (r.items.length) {
+        return { available: true, visibility: "public", total, items: r.items.slice(0, SHOW), nextCursor: r.nextCursor, provider: r.provider, platformUrl: listUrl(profile, kind), attempts: r.attempts };
+      }
+      return { ...lockedResult(profile, kind, "provider_required"), attempts: r.attempts };
     } catch (e) {
-      lastResearchError = (e as Error).message?.slice(0, 160) ?? "error";
       if (e instanceof PlatformError && e.code === "private_account") return lockedResult(profile, kind, "hidden_by_user");
-      // Research API not granted for these keys → fall through
+      return lockedResult(profile, kind, "provider_required");
     }
   }
 
-  if (profile.platform === "instagram" && hasSession() && /^\d+$/.test(profile.id)) {
+  const attempts: ConnectionAttempt[] = [];
+  if (hasSession() && /^\d+$/.test(profile.id)) {
     try {
       const [items] = await cached(key, TTL, () => igFriendships(profile.id, profile.username, kind));
+      attempts.push({ method: "instagram_session", ok: items.length > 0, note: items.length ? "ok" : "empty" });
       if (items.length) {
-        return { available: true, visibility: "public", total, items: items.slice(0, 12), provider: "instagram-session", platformUrl: listUrl(profile, kind) };
+        return { available: true, visibility: "public", total, items: items.slice(0, SHOW), provider: "instagram-session", platformUrl: listUrl(profile, kind), attempts };
       }
     } catch {
-      // session refused → locked state below
+      attempts.push({ method: "instagram_session", ok: false, note: "blocked" });
     }
+  } else {
+    attempts.push({ method: "instagram_session", ok: false, note: hasSession() ? "needs_full_profile" : "not_configured" });
   }
-
-  const base = lockedResult(profile, kind, profile.platform === "instagram" ? "login_only" : "provider_required");
-  if (profile.platform === "tiktok" && kind === "followers") {
-    try {
-      const [fans] = await cached(`${key}:fans`, 10 * 60_000, () => recentFans(profile.username, 5));
-      if (fans.length) base.related = { kind: "recent_commenters", items: fans };
-    } catch {
-      // no related accounts available
-    }
-  }
-  return base;
+  return { ...lockedResult(profile, kind, "login_only"), attempts };
 }
 
 export function providerStatus(platform: Platform) {

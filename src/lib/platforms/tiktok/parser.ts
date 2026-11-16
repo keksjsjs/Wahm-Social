@@ -51,6 +51,7 @@ export function parseUserDetail(json: Any): { status: number; profile?: Profile;
     postsCount: num(s.videoCount) ?? 0,
     createdAt: u.createTime || undefined,
     language: u.language,
+    secUid: u.secUid || undefined,
     hasStory: !!u.UserStoryStatus,
     followingVisibility: typeof u.followingVisibility === "number" ? u.followingVisibility : undefined,
     profileUrl: `https://www.tiktok.com/@${u.uniqueId}`,
@@ -126,8 +127,11 @@ export function parseItemStruct(it: Any): Post {
           height: v.height,
         },
       ].filter((m) => m.url);
+  const place: string | undefined = it.poi?.name || it.poi?.cityName || undefined;
+  const country: string | undefined = typeof it.locationCreated === "string" && /^[A-Z]{2}$/.test(it.locationCreated) ? it.locationCreated : undefined;
   return {
     platform: "tiktok",
+    ...(country || place ? { location: { country, place } } : {}),
     id: String(it.id),
     author,
     caption,

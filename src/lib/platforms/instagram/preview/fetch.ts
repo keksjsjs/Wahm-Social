@@ -7,7 +7,11 @@ const PREVIEW_UAS = [
   "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
   "Twitterbot/1.0",
   "Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)",
+  "Pinterestbot/1.0",
+  "Mozilla/5.0 (compatible; Discordbot/2.0; +https://discordapp.com)",
+  "Iframely/1.3.1 (+https://iframely.com/docs/about)",
 ];
+export const PREVIEW_TRIES = PREVIEW_UAS.length;
 
 export async function fetchPreview(path: string, attempt = 0): Promise<string> {
   const res = await httpGet(`https://www.instagram.com${path}`, {
