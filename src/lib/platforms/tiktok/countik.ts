@@ -37,7 +37,7 @@ async function countikGet(path: string, endpoint: string): Promise<{ ok: true; d
       timeoutMs: 12000,
       headers: HEADERS,
     });
-    if (thirdPartyBlocked(res.status, res.text, res.headers)) {
+    if (thirdPartyBlocked(res.status, res.text, res.headers) || res.status === 403 || res.status === 429) {
       record(endpoint, "countik_blocked", res.status);
       return { ok: false, note: "countik_blocked" };
     }

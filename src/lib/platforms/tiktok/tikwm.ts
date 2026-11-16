@@ -41,7 +41,7 @@ async function tikwmGet(path: string, endpoint: string): Promise<{ ok: true; dat
       timeoutMs: 15000,
       headers: HEADERS,
     });
-    if (thirdPartyBlocked(res.status, res.text, res.headers)) {
+    if (thirdPartyBlocked(res.status, res.text, res.headers) || res.status === 403 || res.status === 429) {
       record(endpoint, "tikwm_blocked", res.status);
       return { ok: false, note: "tikwm_blocked" };
     }
