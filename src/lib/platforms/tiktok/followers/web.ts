@@ -94,17 +94,23 @@ async function refreshSession(username: string): Promise<{ msToken: string; cook
       retries: 0,
       timeoutMs: 12000,
     });
-    const set = cookiesFrom(res.headers);
-    if (set) {
-      cookie = mergeCookie(cookie, set);
-      const m = set.match(/(?:^|;\s*)msToken=([^;]+)/);
-      if (m) {
-        // Use Set-Cookie value as-is for the Cookie header; decode-once for the query param.
-        const raw = m[1];
-        ms = /%[0-9A-Fa-f]{2}/.test(raw) ? (() => { try { return decodeURIComponent(raw); } catch { return raw; } })() : raw;
+    const realProfile = res.text.includes("__UNIVERSAL_DATA_FOR_REHYDRATION__") || res.text.includes("webapp.user-detail");
+    const waf = !realProfile && (res.text.length < 5000 || /slardar|captcha|challenge/i.test(res.text.slice(0, 2000)));
+    // Only merge Set-Cookie when we got a real profile — WAF pages rotate msToken into a useless challenge token.
+    if (!waf) {
+      const set = cookiesFrom(res.headers);
+      if (set) {
+        cookie = mergeCookie(cookie, set);
+        const m = set.match(/(?:^|;\s*)msToken=([^;]+)/);
+        if (m) {
+          const raw = m[1];
+          ms = /%[0-9A-Fa-f]{2}/.test(raw) ? (() => { try { return decodeURIComponent(raw); } catch { return raw; } })() : raw;
+        }
+        const did = set.match(/(?:^|;\s*)ttwid=([^;]+)/);
+        if (did) deviceId = did[1];
       }
-      const did = set.match(/(?:^|;\s*)ttwid=([^;]+)/);
-      if (did) deviceId = did[1];
+    } else {
+      console.warn(`[tiktok-followers] warm skipped (waf/short html len=${res.text.length})`);
     }
     const um = res.text.match(/id="__UNIVERSAL_DATA_FOR_REHYDRATION__"[^>]*>([\s\S]*?)<\/script>/);
     if (um) {
@@ -239,7 +245,7 @@ export async function webList(
       const br = await Promise.race([
         browserList(username, kind),
         new Promise<Awaited<ReturnType<typeof browserList>>>((_, rej) =>
-          setTimeout(() => rej(new Error("browser_timeout")), 28000),
+          setTimeout(() => rej(new Error("browser_timeout")), 55000),
         ),
       ]);
       lastSessionTry = {
