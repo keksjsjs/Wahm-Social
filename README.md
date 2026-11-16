@@ -10,7 +10,7 @@ Built with **Next.js 14 (App Router) + TypeScript + Tailwind**, deployed as a si
 - Platform toggle (TikTok | Instagram), username or URL search
 - SSR profile pages with OG images, JSON-LD (ProfilePage, VideoObject, FAQ, Breadcrumbs), sitemap & robots
 - Post detail + no-watermark video / image / audio downloads (streamed through an allow-listed media proxy)
-- Story viewer (Instagram public stories, needs `IG_SESSIONID`)
+- Story viewer (Instagram public stories need `IG_SESSIONID`; TikTok stories use the tikwm.com public fallback when reachable)
 - Followers/following: per-account privacy gate (public / hidden / private). TikTok lists load via the official TikTok Research API when `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` are set; otherwise counts + "open on TikTok". Instagram lists are login-only.
 - Instagram: public link-preview fallback for profile name/avatar/counts and single posts when the web API is blocked
 - Analytics: engagement rate, averages, posting frequency, best day/hour, top hashtags, earnings estimate, Frost score
@@ -40,7 +40,9 @@ tests/                 node:test unit tests for parsers/analytics
 |---|---|---|
 | TikTok | Profile | `tiktok.com/@user` SSR JSON |
 | TikTok | Recent posts | `tiktok.com/embed/@user` + per-video SSR JSON for stats |
-| TikTok | Downloads | video page `playAddr` streamed with the page cookies |
+| TikTok | Downloads | video page `playAddr` streamed with the page cookies; tikwm.com `/api/?url=` as a last-resort fallback |
+| TikTok | Stories | tikwm.com `/api/user/story` (empty or `tikwm_blocked` when Cloudflare challenges the server IP; never invented) |
+| TikTok | Profile fallback | tikwm.com `/api/user/info` when the official page is blocked or thin; countik.com language + video-id hints. Country from videos only (not invented for zero-post accounts) |
 | Instagram | Profile + 12 posts | `web_profile_info` public endpoint |
 | Instagram | Single post | `/p/{code}/embed/captioned/` |
 | Instagram | Stories | `reels_media` (requires `IG_SESSIONID` of a server-owned account; public accounts only) |
@@ -75,7 +77,7 @@ Render Blueprint: `render.yaml`. Note: free instances have an ephemeral disk; at
 Instagram answers shared datacenter IPs (like Render's free tier) with HTTP 429 / login redirects.
 The adapter tries: session web API → session app API → anonymous → public link preview (rotating unfurl agents),
 and serves the last good copy for 24h when blocked. Set `SCRAPER_PROXY=http://user:pass@host:port`
-(residential proxy) to route all Instagram requests through a clean IP. `/api/health?ig=1` shows the last
+(residential or home-router proxy) to route Instagram, TikTok, and tikwm.com/countik.com fallbacks through a clean IP. `/api/health?ig=1` shows the last
 lookup's per-step HTTP statuses (no cookie values).
 
 ## Followers lists (method chain)

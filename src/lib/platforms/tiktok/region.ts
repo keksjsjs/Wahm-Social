@@ -105,12 +105,20 @@ export async function resolveLocation(profile: Profile): Promise<ProfileLocation
     return region;
   })();
 
-  const [region, fromVideos] = await Promise.all([regionPromise, videoPromise]);
+  let [region, fromVideos] = await Promise.all([regionPromise, videoPromise]);
+  let regionSource: "profile" | "video" | undefined = region ? "profile" : undefined;
+
+  // Last resort: country from a real video via countik id + tikwm region.
+  // Never invent a country for accounts with zero posts.
+  if (!region && !fromVideos?.current && (profile.postsCount ?? 0) > 0) {
+    region = await fallbackVideoRegion(profile).catch(() => undefined);
+    if (region) regionSource = "video";
+  }
 
   if (region) {
     return {
       current: region,
-      source: "profile",
+      source: regionSource ?? "profile",
       place: fromVideos?.place,
       recent: fromVideos?.recent?.filter((x) => x.code !== region) ?? [],
       sample: fromVideos?.sample ?? 0,
@@ -122,4 +130,26 @@ export async function resolveLocation(profile: Profile): Promise<ProfileLocation
   }
   if (profile.language) return { recent: [], sample: 0, language: profile.language };
   return undefined;
+}
+
+async function fallbackVideoRegion(profile: Profile): Promise<string | undefined> {
+  if (!profile.secUid && !profile.username) return undefined;
+  const { countikVideoIds } = await import("./countik");
+  const { tikwmVideo } = await import("./tikwm");
+  const ids = profile.secUid ? await countikVideoIds(profile.secUid).catch(() => [] as string[]) : [];
+  const id = ids[0];
+  if (!id) return undefined;
+  const vid = await Promise.race([
+    tikwmVideo(`https://www.tiktok.com/@${profile.username}/video/${id}`),
+    new Promise<null>((r) => setTimeout(() => r(null), 8000)),
+  ]).catch(() => null);
+  if (!vid || !vid.ok) return undefined;
+  const found = asCountry(vid.data.region);
+  lastRegionTry = {
+    at: new Date().toISOString(),
+    step: "tikwm_video",
+    found: !!found,
+    keys: found ? ["region"] : ["no_region"],
+  };
+  return found;
 }

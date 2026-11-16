@@ -1,16 +1,18 @@
 import "server-only";
 /**
- * TikTok adapter — uses only public, logged-out web pages:
+ * TikTok adapter — public logged-out web pages first, then tikwm.com
+ * (and countik.com hints) as additional fallbacks. No request signing.
  *  - https://www.tiktok.com/@user            (profile SSR JSON)
  *  - https://www.tiktok.com/embed/@user      (recent public videos)
  *  - https://www.tiktok.com/@user/video/:id  (post detail SSR JSON)
- * Followers/following lists and stories require signed, logged-in APIs and are
- * therefore reported as unavailable instead of being bypassed.
+ *  - tikwm user/info, user/story, /api/?url=  (last resort before demo)
  */
 import { cookiesFrom, extractScriptJson, httpGet, looksLikeBotWall } from "../../server/http";
 import { PlatformError, type PlatformAdapter, type Post, type Profile, type Story } from "../types";
 import { parseEmbedState, parseTikTokRef, parseUserDetail, parseVideoDetail } from "./parser";
 import { mapLimit } from "../../server/concurrency";
+import { countikLanguage } from "./countik";
+import { tikwmPost, tikwmStories, tikwmUser } from "./tikwm";
 
 const BASE = "https://www.tiktok.com";
 
@@ -44,19 +46,66 @@ async function resolveShortUrl(url: string): Promise<{ id?: string; username?: s
   return parseTikTokRef(res.url);
 }
 
+function isThin(p: Profile): boolean {
+  return !p.id || (!p.secUid && !p.avatarUrl && p.followers === 0 && p.postsCount === 0);
+}
+
+async function enrichLanguage(profile: Profile): Promise<Profile> {
+  if (profile.language || !profile.secUid) return profile;
+  const language = await countikLanguage(profile.secUid).catch(() => undefined);
+  return language ? { ...profile, language } : profile;
+}
+
 export const tiktok: PlatformAdapter & {
   enrich(posts: Post[], max?: number): Promise<Post[]>;
 } = {
   platform: "tiktok",
 
   async getProfile(username) {
-    const { status, profile } = await fetchProfilePage(username);
-    if (status === 10221 || status === 10202 || status === 404 || !profile) {
-      throw new PlatformError("not_found", `@${username} was not found on TikTok`, 404);
+    let profile: Profile | undefined;
+    let primaryErr: unknown;
+    try {
+      const { status, profile: p } = await fetchProfilePage(username);
+      if (status === 10221 || status === 10202 || status === 404 || !p) {
+        primaryErr = new PlatformError("not_found", `@${username} was not found on TikTok`, 404);
+      } else {
+        profile = p;
+      }
+    } catch (e) {
+      primaryErr = e;
     }
-    // Country: prefer user.region (works with zero posts), then video locations.
-    profile.location = await import("./region").then((m) => m.resolveLocation(profile)).catch(() =>
-      profile.language ? { recent: [], sample: 0, language: profile.language } : undefined,
+
+    if (!profile || isThin(profile)) {
+      const fb = await tikwmUser(username);
+      if (fb.ok) {
+        profile = profile
+          ? {
+              ...fb.data,
+              ...profile,
+              secUid: profile.secUid || fb.data.secUid,
+              avatarUrl: profile.avatarUrl || fb.data.avatarUrl,
+              likes: profile.likes ?? fb.data.likes,
+              createdAt: profile.createdAt ?? fb.data.createdAt,
+              language: profile.language ?? fb.data.language,
+              hasStory: profile.hasStory || fb.data.hasStory,
+            }
+          : fb.data;
+      } else if (!profile) {
+        const blockedish =
+          primaryErr instanceof PlatformError && (primaryErr.code === "blocked" || primaryErr.code === "upstream_error");
+        if (primaryErr instanceof PlatformError && primaryErr.code === "not_found") throw primaryErr;
+        if (blockedish || fb.note === "tikwm_blocked" || fb.note === "tikwm_error") {
+          throw primaryErr instanceof PlatformError ? primaryErr : new PlatformError("blocked", "TikTok temporarily blocked the request", 503);
+        }
+        throw primaryErr instanceof PlatformError ? primaryErr : new PlatformError("not_found", `@${username} was not found on TikTok`, 404);
+      }
+    }
+
+    profile = await enrichLanguage(profile);
+    // Country: prefer user.region from the official page (works with zero posts), then video locations.
+    // tikwm user payloads are not used as a country source.
+    profile.location = await import("./region").then((m) => m.resolveLocation(profile!)).catch(() =>
+      profile!.language ? { recent: [], sample: 0, language: profile!.language } : undefined,
     );
     return profile;
   },
@@ -94,12 +143,21 @@ export const tiktok: PlatformAdapter & {
     let ref = parseTikTokRef(idOrUrl);
     if (ref.shortUrl) ref = await resolveShortUrl(ref.shortUrl);
     if (!ref.id) throw new PlatformError("invalid_input", "Paste a valid TikTok video link", 400);
-    const { post } = await fetchVideoPage(ref.username ?? username ?? "i", ref.id);
-    return post;
+    const author = ref.username ?? username ?? "i";
+    try {
+      const { post } = await fetchVideoPage(author, ref.id);
+      return post;
+    } catch (e) {
+      const url = `https://www.tiktok.com/@${author}/video/${ref.id}`;
+      const fb = await tikwmPost(url, author);
+      if (fb.ok) return fb.data;
+      throw e;
+    }
   },
 
-  async getStories(): Promise<Story[]> {
-    // TikTok stories are only served via signed, logged-in endpoints.
+  async getStories(username): Promise<Story[]> {
+    const fb = await tikwmStories(username);
+    if (fb.ok) return fb.data;
     return [];
   }
 };

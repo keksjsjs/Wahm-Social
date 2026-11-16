@@ -12,13 +12,17 @@ export default async function StoriesTab({ params }: { params: { platform: strin
   const r = parseRoute(params.platform, params.username);
   if (!r) notFound();
   const { t } = getDict();
-  if (r.platform === "tiktok") return <EmptyState icon="◔" title={t.stories.none} desc={t.stories.tiktokNote} />;
   const res = await loadStories(r.platform, r.username);
   if (!res.ok) return <ErrorPanel code={res.code} message={res.message} t={t} />;
+  const emptyDesc = res.value.notice ? undefined : r.platform === "tiktok" ? t.stories.tiktokNote : undefined;
   return (
     <section>
       <NoticeBar notice={res.value.notice} />
-      {res.value.data.length ? <StoryViewer stories={res.value.data} downloadable={res.value.source !== "demo"} /> : <EmptyState icon="◔" title={t.stories.none} />}
+      {res.value.data.length ? (
+        <StoryViewer stories={res.value.data} downloadable={res.value.source !== "demo"} />
+      ) : (
+        <EmptyState icon="◔" title={t.stories.none} desc={emptyDesc} />
+      )}
     </section>
   );
 }

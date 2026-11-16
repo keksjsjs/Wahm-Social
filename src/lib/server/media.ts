@@ -12,6 +12,7 @@ const ALLOWED_HOST_SUFFIXES = [
   ".tiktok.com",
   ".tiktokv.com",
   ".tiktokv.us",
+  ".tikwm.com",
   ".ibyteimg.com",
   ".byteoversea.com",
   ".muscdn.com",
@@ -32,7 +33,9 @@ export function isAllowedMediaUrl(raw: string): boolean {
 }
 
 function refererFor(url: string) {
-  return /instagram|fbcdn/.test(url) ? "https://www.instagram.com/" : "https://www.tiktok.com/";
+  if (/instagram|fbcdn/.test(url)) return "https://www.instagram.com/";
+  if (/tikwm\.com/.test(url)) return "https://www.tikwm.com/";
+  return "https://www.tiktok.com/";
 }
 
 export async function fetchMedia(url: string, opts: { cookie?: string; range?: string | null } = {}) {

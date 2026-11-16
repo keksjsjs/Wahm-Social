@@ -6,6 +6,7 @@ import "server-only";
  */
 import { getPost } from "../platforms";
 import { fetchVideoPage } from "../platforms/tiktok/adapter";
+import { tikwmVideo } from "../platforms/tiktok/tikwm";
 import { parseTikTokRef } from "../platforms/tiktok/parser";
 import { PlatformError, type Platform } from "../platforms/types";
 import { cache } from "./cache";
@@ -26,15 +27,30 @@ export async function resolveMedia(platform: Platform, ref: string, opts: { auth
   let out: ResolvedMedia;
   if (platform === "tiktok") {
     const parsed = parseTikTokRef(ref);
-    const { post, cookie } = await fetchVideoPage(parsed.username ?? opts.author ?? "i", parsed.id ?? ref);
-    if (opts.kind === "audio") {
-      if (!post.music?.url) throw new PlatformError("not_found", "No audio for this post", 404);
-      out = { url: post.music.url, cookie, ext: "mp3", filename: `frostly_tiktok_${post.author}_${post.id}_audio.mp3` };
-    } else {
-      const m = post.media[index] ?? post.media[0];
-      if (!m) throw new PlatformError("not_found", "No downloadable media", 404);
-      const ext = m.type === "video" ? "mp4" : "jpg";
-      out = { url: m.url, cookie, ext, filename: `frostly_tiktok_${post.author}_${post.id}${index ? "_" + index : ""}.${ext}` };
+    const author = parsed.username ?? opts.author ?? "i";
+    const id = parsed.id ?? ref;
+    try {
+      const { post, cookie } = await fetchVideoPage(author, id);
+      if (opts.kind === "audio") {
+        if (!post.music?.url) throw new PlatformError("not_found", "No audio for this post", 404);
+        out = { url: post.music.url, cookie, ext: "mp3", filename: `frostly_tiktok_${post.author}_${post.id}_audio.mp3` };
+      } else {
+        const m = post.media[index] ?? post.media[0];
+        if (!m) throw new PlatformError("not_found", "No downloadable media", 404);
+        const ext = m.type === "video" ? "mp4" : "jpg";
+        out = { url: m.url, cookie, ext, filename: `frostly_tiktok_${post.author}_${post.id}${index ? "_" + index : ""}.${ext}` };
+      }
+    } catch (e) {
+      const url = `https://www.tiktok.com/@${author}/video/${id}`;
+      const fb = await tikwmVideo(url);
+      if (!fb.ok) throw e;
+      if (opts.kind === "audio") {
+        if (!fb.data.music) throw new PlatformError("not_found", "No audio for this post", 404);
+        out = { url: fb.data.music, ext: "mp3", filename: `frostly_tiktok_${fb.data.author ?? author}_${fb.data.id ?? id}_audio.mp3` };
+      } else {
+        const ext = "mp4";
+        out = { url: fb.data.play, ext, filename: `frostly_tiktok_${fb.data.author ?? author}_${fb.data.id ?? id}.${ext}` };
+      }
     }
   } else {
     const { data: post } = await getPost("instagram", ref);

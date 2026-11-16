@@ -10,6 +10,7 @@ import { tiktok } from "./tiktok/adapter";
 import { demoPosts, demoProfile, demoStories } from "./demo";
 import { hasTikTokSession } from "./tiktok/session";
 import { browserList } from "./tiktok/followers/browser";
+import { tikwmStoriesNote } from "./tiktok/tikwm";
 import { connectionsFor } from "./connections";
 import { lockedResult } from "./connections/visibility";
 import { PlatformError, type ConnectionsResult, type DataSource, type Platform, type PlatformAdapter, type Post, type Profile, type Story } from "./types";
@@ -76,7 +77,25 @@ export async function getPost(platform: Platform, ref: string, username?: string
   return { data, source: fromCache ? "cache" : "live" };
 }
 
-export function getStories(platform: Platform, username: string): Promise<Sourced<Story[]>> {
+const TIKWM_BLOCKED_NOTICE =
+  "مصدر الستوري الاحتياطي (tikwm) محجوب من عنوان السيرفر حالياً. أضف بروكسي سكني أو منزلي في SCRAPER_PROXY ثم أعد المحاولة. The tikwm stories fallback is blocked from this server IP — set a residential or home-router proxy in SCRAPER_PROXY and try again.";
+
+export async function getStories(platform: Platform, username: string): Promise<Sourced<Story[]>> {
+  if (platform === "tiktok" && env.demoMode !== "on") {
+    try {
+      const [payload, fromCache] = await cached(`stories:${platform}:${username}:v2`, TTL.stories, async () => {
+        const items = await adapters.tiktok.getStories(username);
+        return { items, note: tikwmStoriesNote() };
+      });
+      const notice = payload.note === "tikwm_blocked" || payload.note === "tikwm_error" ? TIKWM_BLOCKED_NOTICE : undefined;
+      return { data: payload.items, source: fromCache ? "cache" : "live", notice };
+    } catch (e) {
+      if (e instanceof PlatformError && (e.code === "blocked" || e.code === "upstream_error")) {
+        return { data: [], source: "live", notice: TIKWM_BLOCKED_NOTICE };
+      }
+      throw e;
+    }
+  }
   return withFallback(`stories:${platform}:${username}`, TTL.stories, () => adapters[platform].getStories(username), () => demoStories(platform, username));
 }
 

@@ -34,4 +34,5 @@ test("media proxy only allows platform CDNs", () => {
   assert.ok(!isAllowedMediaUrl("https://evil.com/x.jpg"));
   assert.ok(!isAllowedMediaUrl("http://169.254.169.254/latest"));
   assert.ok(!isAllowedMediaUrl("https://tiktokcdn.com.evil.com/x"));
+  assert.ok(isAllowedMediaUrl("https://www.tikwm.com/x.mp4"));
 });
