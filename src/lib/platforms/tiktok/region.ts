@@ -11,6 +11,9 @@ import { httpGet } from "../../server/http";
 import { cookieValue, hasTikTokSession, tiktokWebHeaders } from "./session";
 import { accountLocation } from "./location";
 
+let lastRegionTry: { at: string; step: string; found: boolean; keys?: string[] } | null = null;
+export const regionTry = () => lastRegionTry;
+
 function asCountry(v: unknown): string | undefined {
   return typeof v === "string" && /^[A-Za-z]{2}$/.test(v) ? v.toUpperCase() : undefined;
 }
@@ -49,11 +52,18 @@ async function detailRegion(username: string, secUid?: string): Promise<string |
       retries: 0,
       timeoutMs: 8000,
     });
-    if (!res.text.trimStart().startsWith("{")) return undefined;
+    if (!res.text.trimStart().startsWith("{")) {
+      lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: false, keys: [`http_${res.status}`, `len_${res.text.length}`] };
+      return undefined;
+    }
     const j = JSON.parse(res.text);
-    const u = j?.userInfo?.user ?? j?.user;
-    return asCountry(u?.region);
-  } catch {
+    const u = j?.userInfo?.user ?? j?.user ?? {};
+    const keys = Object.keys(u).filter((k) => /region|country|location|lang|commerce/i.test(k) || ["uniqueId","nickname","region","language"].includes(k));
+    const found = asCountry(u?.region);
+    lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: !!found, keys };
+    return found;
+  } catch (e) {
+    lastRegionTry = { at: new Date().toISOString(), step: "user_detail", found: false, keys: [(e as Error).message?.slice(0, 40) ?? "err"] };
     return undefined;
   }
 }
