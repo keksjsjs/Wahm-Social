@@ -22,7 +22,7 @@ async function fetchProfilePage(username: string) {
   return parseUserDetail(json);
 }
 
-async function fetchEmbed(username: string) {
+export async function fetchEmbed(username: string) {
   const res = await httpGet(`${BASE}/embed/@${encodeURIComponent(username)}`, { retries: 1 });
   const json = extractScriptJson(res.text, "__FRONTITY_CONNECT_STATE__");
   if (!json) return { posts: [] as Post[] };

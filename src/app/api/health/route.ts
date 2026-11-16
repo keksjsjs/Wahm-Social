@@ -1,18 +1,29 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { cache } from "@/lib/server/cache";
 import { env, billingMode } from "@/lib/env";
+import { lastIgLookup } from "@/lib/platforms/instagram/session/diagnostics";
+import { researchStatus } from "@/lib/platforms/connections";
 
 export const dynamic = "force-dynamic";
 
-export function GET() {
+export function GET(req: NextRequest) {
+  const deep = req.nextUrl.searchParams.get("ig") === "1";
   return NextResponse.json({
     ok: true,
-    service: "wahm-social",
+    service: "frostly",
     time: new Date().toISOString(),
     uptimeSec: Math.round(process.uptime()),
     cache: cache.stats(),
     demoMode: env.demoMode,
     billing: billingMode(),
     instagramSession: Boolean(env.igSessionId),
+    ...(deep
+      ? {
+          // Presence flags and last attempt statuses only — never cookie values.
+          instagramCookies: { csrftoken: !!env.igCsrfToken, ds_user_id: !!env.igDsUserId, mid: !!env.igMid, datr: !!env.igDatr },
+          instagramLastLookup: lastIgLookup(),
+          tiktokResearch: researchStatus(),
+        }
+      : {}),
   });
 }

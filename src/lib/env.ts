@@ -15,6 +15,10 @@ export const env = {
     .map((s) => s.trim().toLowerCase())
     .filter(Boolean),
   igSessionId: read("IG_SESSIONID"),
+  igCsrfToken: read("IG_CSRFTOKEN"),
+  igDsUserId: read("IG_DS_USER_ID"),
+  igMid: read("IG_MID"),
+  igDatr: read("IG_DATR"),
   scraperProxy: read("SCRAPER_PROXY"),
   stripeSecret: read("STRIPE_SECRET_KEY"),
   stripePriceMonthly: read("STRIPE_PRICE_PRO_MONTHLY"),

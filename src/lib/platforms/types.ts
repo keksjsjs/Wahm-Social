@@ -85,6 +85,16 @@ export interface Connection {
   displayName: string;
   avatarUrl: string;
   verified: boolean;
+  /** Unix seconds of the public activity that surfaced this account (e.g. a comment). */
+  activeAt?: number;
+  /** Short public context, e.g. the comment text. */
+  note?: string;
+}
+
+/** Publicly visible accounts related to a profile when the real list can't be read officially. */
+export interface RelatedAccounts {
+  kind: "recent_commenters";
+  items: Connection[];
 }
 
 export type ConnectionsReason =
@@ -105,6 +115,8 @@ export interface ConnectionsResult {
   provider?: string;
   /** Deep link to view the list on the platform itself. */
   platformUrl?: string;
+  /** Fallback: recently active public accounts (clearly labelled, not claimed to be followers). */
+  related?: RelatedAccounts;
 }
 
 export interface Envelope<T> {

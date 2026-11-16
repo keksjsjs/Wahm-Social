@@ -24,6 +24,14 @@ services:
         sync: false
       - key: IG_SESSIONID
         sync: false
+      - key: IG_CSRFTOKEN
+        sync: false
+      - key: IG_DS_USER_ID
+        sync: false
+      - key: IG_MID
+        sync: false
+      - key: IG_DATR
+        sync: false
       - key: TIKTOK_CLIENT_KEY
         sync: false
       - key: TIKTOK_CLIENT_SECRET

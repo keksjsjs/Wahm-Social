@@ -6,6 +6,7 @@ import { EmptyState } from "../../ui";
 import { ConnectionRow } from "./ConnectionRow";
 import { VisibilityBadge } from "./VisibilityBadge";
 import { REASON_COPY } from "./copy";
+import { RelatedAccounts } from "./RelatedAccounts";
 
 /**
  * Per-account behaviour: public lists render (when a provider returns data),
@@ -42,7 +43,7 @@ export function ConnectionsPanel({
         {header}
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {result.items.map((c) => (
-            <ConnectionRow key={c.username} c={c} platform={platform} />
+            <ConnectionRow key={c.username} c={c} platform={platform} locale={locale} />
           ))}
         </div>
         {result.nextCursor && (
@@ -61,6 +62,11 @@ export function ConnectionsPanel({
   return (
     <section>
       {header}
+      {result.related && result.related.items.length > 0 && (
+        <div className="mb-6">
+          <RelatedAccounts related={result.related} platform={platform} locale={locale} />
+        </div>
+      )}
       <EmptyState
         icon={isPublic ? "🔓" : "🔒"}
         title={title}
