@@ -246,7 +246,7 @@ export async function webList(
       const br = await Promise.race([
         browserList(username, kind, secUid),
         new Promise<Awaited<ReturnType<typeof browserList>>>((_, rej) =>
-          setTimeout(() => rej(new Error("browser_timeout")), 55000),
+          setTimeout(() => rej(new Error("browser_timeout")), 90000),
         ),
       ]);
       lastSessionTry = {

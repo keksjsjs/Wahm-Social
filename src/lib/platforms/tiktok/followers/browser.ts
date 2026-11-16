@@ -105,7 +105,19 @@ export async function browserList(
       waitUntil: "domcontentloaded",
       timeout: 45000,
     });
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      await page.waitForFunction(
+        () =>
+          Boolean((window as unknown as { byted_acrawler?: unknown }).byted_acrawler) ||
+          Boolean(document.querySelector('[data-e2e="followers-count"]')) ||
+          Boolean(document.getElementById("__UNIVERSAL_DATA_FOR_REHYDRATION__")),
+        { timeout: 15000 },
+      );
+    } catch {
+      /* continue anyway */
+    }
+    await new Promise((r) => setTimeout(r, 1500));
 
     const meta = await page.evaluate(() => {
       const s = document.getElementById("__UNIVERSAL_DATA_FOR_REHYDRATION__");
@@ -146,81 +158,82 @@ export async function browserList(
     const deviceId = cookieValue("ttwid") || verifyFp;
     const storeRegion = (cookieValue("store-country-code") || "US").toUpperCase();
 
-    const inPage = await page.evaluate(
-      async ({ secUid, scene, msToken, verifyFp, deviceId, region }: { secUid: string; scene: string; msToken: string; verifyFp: string; deviceId: string; region: string }) => {
-        const qs = new URLSearchParams({
-          aid: "1988",
-          app_language: "en",
-          app_name: "tiktok_web",
-          browser_language: "en-US",
-          browser_name: "Mozilla",
-          browser_online: "true",
-          browser_platform: "Win32",
-          channel: "tiktok_web",
-          cookie_enabled: "true",
-          count: "30",
-          device_platform: "web_pc",
-          from_page: "user",
-          maxCursor: "0",
-          minCursor: "0",
-          os: "windows",
-          region,
-          scene,
-          secUid,
-          webcast_language: "en",
-        });
-        if (msToken) qs.set("msToken", msToken);
-        if (deviceId) qs.set("device_id", deviceId);
-        if (verifyFp) qs.set("verifyFp", verifyFp);
-        try {
-          const res = await fetch(`/api/user/list/?${qs.toString()}`, {
-            credentials: "include",
-            headers: { accept: "application/json" },
-          });
-          const text = await res.text();
-          return { status: res.status, text };
-        } catch (e) {
-          return { status: 0, text: "", err: String(e).slice(0, 80) };
-        }
-      },
-      { secUid, scene, msToken, verifyFp, deviceId, region: storeRegion },
-    );
-
-    if (inPage.text?.trimStart().startsWith("{")) {
-      try {
-        const j = JSON.parse(inPage.text);
-        const items = parseList(j).filter((c) => c.username.toLowerCase() !== username.toLowerCase());
-        if (items.length && inPage.text.length > 500) {
-          captureBox.current = { status: inPage.status, bodyLen: inPage.text.length, items };
-        } else {
-          console.warn(`[tiktok-followers] browser inpage status=${inPage.status} body=${inPage.text.length} note=${String(j?.status_msg || j?.statusMsg || "empty").slice(0, 40)}`);
-        }
-      } catch {
-        /* ignore */
-      }
-    } else {
-      console.warn(`[tiktok-followers] browser inpage status=${inPage.status} body=${(inPage.text || "").length}`);
-    }
-
-    if (!captureBox.current) {
+    // 1) Click the Followers/Following control first — TikTok UI issues a fully signed list request.
+    {
       const sel = kind === "followers" ? '[data-e2e="followers-count"]' : '[data-e2e="following-count"]';
-      await page.evaluate((s: string, kind: "followers" | "following") => {
+      const clicked = await page.evaluate((s: string, kind: "followers" | "following") => {
         const el = document.querySelector(s) as HTMLElement | null;
-        if (el) {
-          el.click();
-          return "e2e";
-        }
+        if (el) { el.click(); return "e2e"; }
         const label = kind === "followers" ? /followers/i : /following/i;
         for (const n of document.querySelectorAll("strong, span, a, div, button")) {
           const t = n.textContent || "";
-          if (label.test(t) && /\d/.test(t)) {
-            (n as HTMLElement).click();
-            return "text";
-          }
+          if (label.test(t) && /\d/.test(t)) { (n as HTMLElement).click(); return "text"; }
         }
         return null;
       }, sel, kind);
-      for (let i = 0; i < 20 && !captureBox.current; i++) await new Promise((r) => setTimeout(r, 500));
+      console.warn(`[tiktok-followers] browser click=${clicked}`);
+      for (let i = 0; i < 24 && !captureBox.current; i++) await new Promise((r) => setTimeout(r, 500));
+    }
+
+    // 2) If UI click didn't yield a list, call fetch — prefer TikTok's own byted_acrawler.sign when present.
+    if (!captureBox.current) {
+      const inPage = await page.evaluate(
+        async ({ secUid, scene, msToken, verifyFp, deviceId, region }: { secUid: string; scene: string; msToken: string; verifyFp: string; deviceId: string; region: string }) => {
+          const qs = new URLSearchParams({
+            aid: "1988",
+            app_language: "en",
+            app_name: "tiktok_web",
+            browser_language: "en-US",
+            browser_name: "Mozilla",
+            browser_online: "true",
+            browser_platform: "Win32",
+            channel: "tiktok_web",
+            cookie_enabled: "true",
+            count: "30",
+            device_platform: "web_pc",
+            from_page: "user",
+            maxCursor: "0",
+            minCursor: "0",
+            os: "windows",
+            region,
+            scene,
+            secUid,
+            webcast_language: "en",
+          });
+          if (msToken) qs.set("msToken", msToken);
+          if (deviceId) qs.set("device_id", deviceId);
+          if (verifyFp) qs.set("verifyFp", verifyFp);
+          let path = `/api/user/list/?${qs.toString()}`;
+          try {
+            const ac = (window as unknown as { byted_acrawler?: { sign?: (o: { url: string }) => Record<string, string> } }).byted_acrawler;
+            if (ac?.sign) {
+              const signed = ac.sign({ url: path });
+              for (const [k, v] of Object.entries(signed || {})) {
+                if (v != null) qs.set(k, String(v));
+              }
+              path = `/api/user/list/?${qs.toString()}`;
+            }
+          } catch { /* use unsigned path; TikTok fetch hooks may still sign */ }
+          try {
+            const res = await fetch(path, { credentials: "include", headers: { accept: "application/json" } });
+            const text = await res.text();
+            return { status: res.status, text, signed: path.includes("X-Bogus") || path.includes("X-Gnarly") };
+          } catch (e) {
+            return { status: 0, text: "", err: String(e).slice(0, 80), signed: false };
+          }
+        },
+        { secUid, scene, msToken, verifyFp, deviceId, region: storeRegion },
+      );
+      console.warn(`[tiktok-followers] browser inpage status=${inPage.status} body=${(inPage.text || "").length} signed=${inPage.signed}`);
+      if (inPage.text?.trimStart().startsWith("{")) {
+        try {
+          const j = JSON.parse(inPage.text);
+          const items = parseList(j).filter((c) => c.username.toLowerCase() !== username.toLowerCase());
+          if (items.length && inPage.text.length > 500) {
+            captureBox.current = { status: inPage.status, bodyLen: inPage.text.length, items };
+          }
+        } catch { /* ignore */ }
+      }
     }
 
     const got = captureBox.current;
