@@ -22,6 +22,8 @@ export const env = {
   scraperProxy: read("SCRAPER_PROXY"),
   /** Optional TikTok web session cookie (sessionid) for list endpoints. */
   tiktokSessionId: read("TIKTOK_SESSIONID"),
+  /** Full TikTok Cookie header from a logged-in browser (msToken, ttwid, tt_csrf_token, …). Never logged. */
+  tiktokCookie: read("TIKTOK_COOKIE"),
   stripeSecret: read("STRIPE_SECRET_KEY"),
   stripePriceMonthly: read("STRIPE_PRICE_PRO_MONTHLY"),
   stripePriceYearly: read("STRIPE_PRICE_PRO_YEARLY"),

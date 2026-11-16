@@ -51,6 +51,7 @@ export function parseUserDetail(json: Any): { status: number; profile?: Profile;
     postsCount: num(s.videoCount) ?? 0,
     createdAt: u.createTime || undefined,
     language: u.language,
+    region: (typeof u.region === "string" && /^[A-Za-z]{2}$/.test(u.region) ? u.region.toUpperCase() : undefined),
     secUid: u.secUid || undefined,
     hasStory: !!u.UserStoryStatus,
     followingVisibility: typeof u.followingVisibility === "number" ? u.followingVisibility : undefined,

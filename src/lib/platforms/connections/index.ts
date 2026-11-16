@@ -41,7 +41,9 @@ async function tiktokList(profile: Profile, kind: "followers" | "following", cur
     attempts.push({ method: "official_api", ok: false, note: "not_configured" });
   }
   if (profile.secUid) {
-    for (const method of ["web_public", "mobile_web", "session"] as const) {
+    // Session first when configured — it carries msToken / tt_csrf_token from a real login.
+    const methods = (["session", "web_public", "mobile_web"] as const);
+    for (const method of methods) {
       const r = await webList(profile.username, profile.secUid, kind, method);
       attempts.push(r.attempt);
       if (r.items.length) return { items: r.items, nextCursor: null, provider: `tiktok-${method}`, attempts };

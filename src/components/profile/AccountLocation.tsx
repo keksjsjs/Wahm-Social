@@ -23,12 +23,22 @@ function languageName(code: string, locale: Locale) {
 export function AccountLocation({ loc, locale }: { loc: ProfileLocation; locale: Locale }) {
   const ar = locale === "ar";
   const others = loc.recent.filter((r) => r.code !== loc.current);
+  const basis =
+    loc.source === "profile"
+      ? ar
+        ? "* من حقل الدولة في ملف الحساب (بدون الحاجة لمنشورات)"
+        : "* from the account's own region field (works with zero posts)"
+      : loc.source === "video" && loc.current
+        ? ar
+          ? `* مستنتجة من آخر ${loc.sample} فيديو عام (مكان النشر)`
+          : `* based on where the latest ${loc.sample} public video(s) were posted`
+        : null;
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
       {loc.current && (
-        <span className="chip !border-accent-400/40 !bg-accent-500/10 font-semibold text-ink" title={ar ? "حسب آخر فيديو عام" : "From the latest public video"}>
+        <span className="chip !border-accent-400/40 !bg-accent-500/10 font-semibold text-ink">
           <span aria-hidden>{flag(loc.current)}</span>
-          {ar ? "دولة الحساب الحالية:" : "Current country:"} {regionName(loc.current, locale)}
+          {ar ? "دولة الحساب:" : "Account country:"} {regionName(loc.current, locale)}
         </span>
       )}
       {loc.place && (
@@ -46,11 +56,7 @@ export function AccountLocation({ loc, locale }: { loc: ProfileLocation; locale:
           🌐 {ar ? "لغة الحساب:" : "Account language:"} {languageName(loc.language, locale)}
         </span>
       )}
-      {loc.current && (
-        <span className="text-[11px] text-ink-4">
-          {ar ? `* مستنتجة من آخر ${loc.sample} فيديو عام (مكان النشر)` : `* based on where the latest ${loc.sample} public video(s) were posted`}
-        </span>
-      )}
+      {basis && <span className="text-[11px] text-ink-4">{basis}</span>}
     </div>
   );
 }

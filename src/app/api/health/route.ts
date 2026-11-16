@@ -3,6 +3,7 @@ import { cache } from "@/lib/server/cache";
 import { env, billingMode } from "@/lib/env";
 import { lastIgLookup } from "@/lib/platforms/instagram/session/diagnostics";
 import { researchStatus } from "@/lib/platforms/connections";
+import { lastFollowerTry, sessionConfigured } from "@/lib/platforms/tiktok/followers/web";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ export function GET(req: NextRequest) {
           // Presence flags and last attempt statuses only — never cookie values.
           scraperProxy: Boolean(env.scraperProxy),
           tiktokSession: Boolean(env.tiktokSessionId),
+          tiktokCookie: Boolean(env.tiktokCookie),
+          tiktokSessionFlags: sessionConfigured(),
+          tiktokLastFollowerTry: lastFollowerTry(),
           instagramCookies: { csrftoken: !!env.igCsrfToken, ds_user_id: !!env.igDsUserId, mid: !!env.igMid, datr: !!env.igDatr },
           instagramLastLookup: lastIgLookup(),
           tiktokResearch: researchStatus(),

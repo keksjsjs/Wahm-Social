@@ -76,8 +76,10 @@ export interface Post {
 
 /** Where a public account posts from, derived from its own public videos. */
 export interface ProfileLocation {
-  /** ISO-3166 alpha-2 country of the most recent public video. */
+  /** ISO-3166 alpha-2 country shown on the profile. */
   current?: string;
+  /** Where current came from: the account's own region field, or videos. */
+  source?: "profile" | "video";
   /** Most recent tagged place name, if the creator tagged one. */
   place?: string;
   /** Countries seen across the sampled recent videos, most frequent first. */

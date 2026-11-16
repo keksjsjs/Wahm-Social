@@ -40,5 +40,6 @@ export const NOTE_COPY: Record<string, { ar: string; en: string }> = {
   needs_full_profile: { ar: "يحتاج بيانات الحساب الكاملة (انستقرام يحدّ السيرفر حالياً)", en: "needs the full profile (Instagram is throttling the server)" },
   blocked: { ar: "انستقرام رفض الطلب حالياً", en: "Instagram refused the request right now" },
   empty: { ar: "رد فاضي", en: "empty reply" },
+  empty_json: { ar: "رد JSON بدون مستخدمين", en: "JSON reply with no users" },
   error: { ar: "خطأ", en: "error" },
 };
