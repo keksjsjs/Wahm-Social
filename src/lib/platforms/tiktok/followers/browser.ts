@@ -147,6 +147,11 @@ export async function browserList(
     const secUid = meta.secUid || secUidHint;
     console.warn(`[tiktok-followers] browser page html=${meta.htmlLen} secUid=${secUid ? "yes" : "no"} challenge=${meta.challenge}`);
 
+    // Tiny/challenge HTML cannot sign requests — bail before long click waits.
+    if (meta.challenge && meta.htmlLen < 8000) {
+      lastBrowserTry = { at: new Date().toISOString(), note: "browser_challenge" };
+      return { items: [], region, note: "browser_challenge" };
+    }
     if (!secUid) {
       lastBrowserTry = { at: new Date().toISOString(), note: meta.challenge ? "browser_challenge" : "browser_no_secuid" };
       return { items: [], region, note: meta.challenge ? "browser_challenge" : "browser_no_secuid" };

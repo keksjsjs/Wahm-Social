@@ -41,7 +41,7 @@ export const NOTE_COPY: Record<string, { ar: string; en: string }> = {
   blocked: { ar: "انستقرام رفض الطلب حالياً", en: "Instagram refused the request right now" },
   empty: { ar: "رد فاضي", en: "empty reply" },
   empty_json: { ar: "رد JSON بدون مستخدمين", en: "JSON reply with no users" },
-  browser_challenge: { ar: "تيك توك طلب تحقّق أمام المتصفح على السيرفر", en: "TikTok showed a challenge in the server browser" },
+  browser_challenge: { ar: "تيك توك حاجب IP السيرفر (لازم بروكسي سكني SCRAPER_PROXY)", en: "TikTok is blocking the server IP (needs residential SCRAPER_PROXY)" },
   browser_no_secuid: { ar: "ما قدرنا نقرأ معرّف الحساب من الصفحة", en: "could not read the account id from the page" },
   browser_empty: { ar: "المتصفّح فتح تيك توك لكن القائمة رجعت فاضي", en: "browser opened TikTok but the list came back empty" },
   browser_error: { ar: "تعذّر تشغيل متصفح الجلسة على السيرفر", en: "could not start the session browser on the server" },
