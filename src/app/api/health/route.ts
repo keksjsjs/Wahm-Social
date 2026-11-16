@@ -3,7 +3,7 @@ import { cache } from "@/lib/server/cache";
 import { env, billingMode } from "@/lib/env";
 import { lastIgLookup } from "@/lib/platforms/instagram/session/diagnostics";
 import { researchStatus } from "@/lib/platforms/connections";
-import { lastFollowerTry, sessionConfigured } from "@/lib/platforms/tiktok/followers/web";
+import { lastFollowerTry, sessionConfigured, regionHintCount, regionHintSample } from "@/lib/platforms/tiktok/followers/web";
 import { regionTry } from "@/lib/platforms/tiktok/region";
 
 export const dynamic = "force-dynamic";
@@ -28,6 +28,7 @@ export function GET(req: NextRequest) {
           tiktokSessionFlags: sessionConfigured(),
           tiktokLastFollowerTry: lastFollowerTry(),
           tiktokLastRegionTry: regionTry(),
+          tiktokRegionHints: { count: regionHintCount(), sample: regionHintSample() },
           instagramCookies: { csrftoken: !!env.igCsrfToken, ds_user_id: !!env.igDsUserId, mid: !!env.igMid, datr: !!env.igDatr },
           instagramLastLookup: lastIgLookup(),
           tiktokResearch: researchStatus(),

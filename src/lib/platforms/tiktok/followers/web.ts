@@ -27,6 +27,8 @@ const regionHints = new Map<string, string>();
 export function rememberedRegion(username: string): string | undefined {
   return regionHints.get(username.toLowerCase());
 }
+export const regionHintCount = () => regionHints.size;
+export const regionHintSample = () => [...regionHints.entries()].slice(0, 5).map(([u, r]) => ({ u, r }));
 
 function parseUsers(j: any): Connection[] {
   const list: any[] = j?.userList ?? j?.followings ?? j?.followers ?? j?.userInfoList ?? [];
