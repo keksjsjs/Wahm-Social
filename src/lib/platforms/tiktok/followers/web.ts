@@ -93,6 +93,7 @@ async function refreshSession(username: string): Promise<{ msToken: string; cook
       headers: { "user-agent": CHROME_UA, cookie, accept: "text/html", referer: "https://www.tiktok.com/" },
       retries: 0,
       timeoutMs: 12000,
+      proxy: Boolean(process.env.SCRAPER_PROXY),
     });
     const realProfile = res.text.includes("__UNIVERSAL_DATA_FOR_REHYDRATION__") || res.text.includes("webapp.user-detail");
     const waf = !realProfile && (res.text.length < 5000 || /slardar|captcha|challenge/i.test(res.text.slice(0, 2000)));
@@ -171,7 +172,7 @@ async function callList(
   method: ConnectionAttempt["method"],
 ): Promise<{ items: Connection[]; attempt: ConnectionAttempt; status: number; bodyLen: number }> {
   try {
-    const res = await httpGet(url, { headers, retries: 0, timeoutMs: 10000 });
+    const res = await httpGet(url, { headers, retries: 0, timeoutMs: 10000, proxy: Boolean(process.env.SCRAPER_PROXY) });
     const body = res.text.trim();
     if (!body) return { items: [], attempt: { method, ok: false, note: "empty_unsigned" }, status: res.status, bodyLen: 0 };
     if (!body.startsWith("{")) return { items: [], attempt: { method, ok: false, note: `http_${res.status}` }, status: res.status, bodyLen: body.length };
@@ -243,7 +244,7 @@ export async function webList(
     // B) Chromium — TikTok page JS adds the signature we refuse to reverse-engineer.
     try {
       const br = await Promise.race([
-        browserList(username, kind),
+        browserList(username, kind, secUid),
         new Promise<Awaited<ReturnType<typeof browserList>>>((_, rej) =>
           setTimeout(() => rej(new Error("browser_timeout")), 55000),
         ),

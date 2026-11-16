@@ -13,7 +13,7 @@ const OBFUSCATE = process.env.OBFUSCATE !== "0";
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: { serverComponentsExternalPackages: ["undici", "puppeteer-core", "@sparticuz/chromium"] },
+  experimental: { serverComponentsExternalPackages: ["undici", "puppeteer-core", "@sparticuz/chromium", "puppeteer-extra", "puppeteer-extra-plugin-stealth"] },
   productionBrowserSourceMaps: false,
   compress: true,
   images: { unoptimized: true },
