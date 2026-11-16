@@ -1,15 +1,15 @@
 import "server-only";
 /**
  * Public tikwm.com fallbacks: profile, stories, watermark-free video.
- * Requests go through SCRAPER_PROXY when it is set. Cloudflare/HTML
- * challenges are recorded as `tikwm_blocked` — never treated as data.
+ * Requests go through RELAY_URL (allowlisted hosts) or SCRAPER_PROXY when set.
+ * Cloudflare/HTML challenges are `tikwm_blocked`; daily free-tier limits are `tikwm_quota`.
  */
 import { httpGet } from "../../server/http";
 import type { Post, Profile, Story } from "../types";
 import { parseJsonBody, thirdPartyBlocked } from "./fallback-http";
 import { mediaFromTikwm, postFromTikwm, profileFromTikwm, storiesFromTikwm, unwrapTikwm, type TikwmVideoMedia } from "./tikwm-parse";
 
-export type TikwmNote = "ok" | "tikwm_blocked" | "tikwm_empty" | "tikwm_not_found" | "tikwm_error";
+export type TikwmNote = "ok" | "tikwm_blocked" | "tikwm_quota" | "tikwm_empty" | "tikwm_not_found" | "tikwm_error";
 
 export interface TikwmTry {
   at: string;
@@ -53,7 +53,7 @@ async function tikwmGet(path: string, endpoint: string): Promise<{ ok: true; dat
     }
     const unwrapped = unwrapTikwm(json);
     if (!unwrapped.ok) {
-      const note: TikwmNote = unwrapped.notFound ? "tikwm_not_found" : "tikwm_empty";
+      const note: TikwmNote = unwrapped.quota ? "tikwm_quota" : unwrapped.notFound ? "tikwm_not_found" : "tikwm_empty";
       record(endpoint, note, res.status);
       return { ok: false, note };
     }
@@ -108,8 +108,9 @@ async function tikwmVideoPost(url: string): Promise<{ ok: true; data: unknown } 
     }
     const unwrapped = unwrapTikwm(json);
     if (!unwrapped.ok) {
-      record("video_post", unwrapped.notFound ? "tikwm_not_found" : "tikwm_empty", res.status);
-      return { ok: false, note: unwrapped.notFound ? "tikwm_not_found" : "tikwm_empty" };
+      const note: TikwmNote = unwrapped.quota ? "tikwm_quota" : unwrapped.notFound ? "tikwm_not_found" : "tikwm_empty";
+      record("video_post", note, res.status);
+      return { ok: false, note };
     }
     record("video_post", "ok", res.status);
     return { ok: true, data: unwrapped.data };

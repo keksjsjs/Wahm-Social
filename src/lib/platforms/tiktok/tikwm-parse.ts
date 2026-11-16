@@ -2,7 +2,7 @@
  * Pure mappers for tikwm.com JSON payloads. No I/O — unit-tested.
  */
 import type { Post, Profile, Story } from "../types";
-import { asCountry, asNum, isRecord } from "./fallback-http";
+import { asCountry, asNum, isRecord, isTikwmQuota } from "./fallback-http";
 import { extractHashtags } from "../../format";
 
 export interface TikwmVideoMedia {
@@ -135,10 +135,11 @@ export function postFromTikwm(data: unknown, username?: string): Post | null {
 }
 
 /** Unwrap `{ code, data }` tikwm envelopes. code === 0 is success. */
-export function unwrapTikwm(json: unknown): { ok: true; data: unknown } | { ok: false; notFound?: boolean } {
+export function unwrapTikwm(json: unknown): { ok: true; data: unknown } | { ok: false; notFound?: boolean; quota?: boolean } {
   if (!isRecord(json)) return { ok: false };
   const code = json.code;
   if (code === 0) return { ok: true, data: json.data ?? null };
+  if (isTikwmQuota(json)) return { ok: false, quota: true };
   const msg = str(json.msg || json.message).toLowerCase();
   const notFound = /not found|doesn't exist|does not exist|invalid user|no user/i.test(msg);
   return { ok: false, notFound };

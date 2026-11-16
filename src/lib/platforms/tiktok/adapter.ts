@@ -2,6 +2,7 @@ import "server-only";
 /**
  * TikTok adapter — public logged-out web pages first, then tikwm.com
  * (and countik.com hints) as additional fallbacks. No request signing.
+ * Official pages and fallbacks use RELAY_URL when set (allowlisted GET hosts).
  *  - https://www.tiktok.com/@user            (profile SSR JSON)
  *  - https://www.tiktok.com/embed/@user      (recent public videos)
  *  - https://www.tiktok.com/@user/video/:id  (post detail SSR JSON)

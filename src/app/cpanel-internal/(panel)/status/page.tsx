@@ -67,7 +67,7 @@ export default async function StatusPage({ searchParams }: { searchParams: Flash
           </div>
         )}
       </Section>
-      <Section title="📡 آخر محاولة لكل مصدر" desc="الملاحظة tikwm_blocked تعني أن Cloudflare حاجب عنوان السيرفر — الحل بروكسي.">
+      <Section title="📡 آخر محاولة لكل مصدر" desc="tikwm_blocked = Cloudflare حاجب عنوان السيرفر (الحل RELAY_URL أو بروكسي). tikwm_quota = tikwm وصلت حدها اليومي المجاني.">
         <div className="space-y-3">
           {sources.map(([k, v]) => (
             <div key={k} className="rounded-xl border border-line bg-surface/40 p-3">

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { thirdPartyBlocked, parseJsonBody, asCountry } from "../src/lib/platforms/tiktok/fallback-http";
+import { thirdPartyBlocked, parseJsonBody, asCountry, isTikwmQuota } from "../src/lib/platforms/tiktok/fallback-http";
 import { languageFromCountik, videoIdsFromAnalyze } from "../src/lib/platforms/tiktok/countik-parse";
 import { mediaFromTikwm, postFromTikwm, profileFromTikwm, storiesFromTikwm, unwrapTikwm } from "../src/lib/platforms/tiktok/tikwm-parse";
 import { isAllowedMediaUrl } from "../src/lib/server/media";
@@ -70,4 +70,18 @@ test("countik helpers return language and video ids, never a country", () => {
 test("media proxy allows tikwm.com but not lookalikes", () => {
   assert.ok(isAllowedMediaUrl("https://www.tikwm.com/video/media/play/x.mp4"));
   assert.ok(!isAllowedMediaUrl("https://tikwm.com.evil.com/x"));
+});
+
+test("unwrapTikwm and isTikwmQuota detect the free daily limit honestly", () => {
+  const quota = { code: -1, msg: "Free Api Limit: 10000 request/ 1 day." };
+  assert.equal(isTikwmQuota(quota), true);
+  const unwrapped = unwrapTikwm(quota);
+  assert.equal(unwrapped.ok, false);
+  assert.equal(unwrapped.ok === false && unwrapped.quota, true);
+  assert.equal(unwrapped.ok === false && unwrapped.notFound, undefined);
+  const miss = unwrapTikwm({ code: -1, msg: "User not found" });
+  assert.equal(miss.ok, false);
+  assert.equal(miss.ok === false && miss.quota, undefined);
+  assert.equal(miss.ok === false && miss.notFound, true);
+  assert.equal(isTikwmQuota({ code: 0, data: {} }), false);
 });

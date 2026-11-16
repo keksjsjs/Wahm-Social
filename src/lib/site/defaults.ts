@@ -8,6 +8,7 @@ import { DEFAULT_DESCRIPTION } from "../seo/constants";
 export const DEFAULT_SETTINGS: SiteSettings = {
   version: 1,
   updatedAt: "",
+  relayUrl: "",
   brand: {
     siteName: { ar: ar.brand, en: en.brand },
     tagline: { ar: ar.tagline, en: en.tagline },

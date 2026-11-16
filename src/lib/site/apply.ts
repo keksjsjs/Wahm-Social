@@ -8,7 +8,7 @@ import { setPriceOverrides } from "./prices";
 
 const g = globalThis as unknown as { __frostlyEnvOrig?: Record<string, string | undefined> };
 
-const MANAGED = [...SECRET_DEFS.map((d) => d.env), "DEMO_MODE"];
+const MANAGED = [...SECRET_DEFS.map((d) => d.env), "DEMO_MODE", "RELAY_URL"];
 
 function originals() {
   if (!g.__frostlyEnvOrig) {
@@ -27,6 +27,7 @@ export function applyOverrides(settings: SiteSettings, secrets: Record<string, s
   const orig = originals();
   for (const d of SECRET_DEFS) setEnv(d.env, secrets[d.key] ? secrets[d.key] : orig[d.env]);
   setEnv("DEMO_MODE", settings.features.demoMode || orig.DEMO_MODE);
+  setEnv("RELAY_URL", settings.relayUrl || orig.RELAY_URL);
   setPriceOverrides(settings.features.prices);
 }
 

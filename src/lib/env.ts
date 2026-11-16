@@ -41,6 +41,10 @@ export const env = {
   get scraperProxy() {
     return read("SCRAPER_PROXY");
   },
+  /** Optional Cloudflare Worker relay for tiktok.com / tikwm.com / countik.com (not a secret). */
+  get relayUrl() {
+    return read("RELAY_URL");
+  },
   /** Optional TikTok web session cookie (sessionid) for list endpoints. */
   get tiktokSessionId() {
     return read("TIKTOK_SESSIONID");

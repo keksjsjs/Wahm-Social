@@ -58,6 +58,8 @@ export interface AssetSettings {
 export interface SiteSettings {
   version: number;
   updatedAt: string;
+  /** Cloudflare Worker base URL (RELAY_URL). Empty = use the Render env value. */
+  relayUrl: string;
   brand: BrandSettings;
   texts: TextSettings;
   seo: SeoSettings;
@@ -66,4 +68,4 @@ export interface SiteSettings {
   assets: AssetSettings;
 }
 
-export type SettingsSection = "brand" | "texts" | "seo" | "features" | "theme" | "assets";
+export type SettingsSection = "brand" | "texts" | "seo" | "features" | "theme" | "assets" | "relay";

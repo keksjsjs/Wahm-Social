@@ -3,6 +3,7 @@
  * realistic browser headers and structured errors.
  */
 import { PlatformError } from "../platforms/types";
+import { recordRelayTry, rewriteViaRelay, shouldRelay } from "./relay";
 
 export const DESKTOP_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -35,8 +36,10 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const doFetch = opts.proxy ? await proxiedFetch() : null;
-      const res = await (doFetch ?? fetch)(url, {
+      const useRelay = shouldRelay(url, opts);
+      const fetchUrl = useRelay ? rewriteViaRelay(url) : url;
+      const doFetch = useRelay ? null : opts.proxy ? await proxiedFetch() : null;
+      const res = await (doFetch ?? fetch)(fetchUrl, {
         method: opts.method ?? "GET",
         body: opts.body,
         headers: {
@@ -54,7 +57,9 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
         await sleep(400 * (attempt + 1));
         continue;
       }
-      return { status: res.status, text, headers: res.headers, url: res.url };
+      if (useRelay) recordRelayTry(url, res.status, res.status < 400);
+      // When relayed, res.url is the Worker URL — keep the original target for callers.
+      return { status: res.status, text, headers: res.headers, url: useRelay ? url : res.url };
     } catch (e) {
       lastErr = e;
       if (attempt < retries) await sleep(400 * (attempt + 1));

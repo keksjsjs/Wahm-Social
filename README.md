@@ -38,10 +38,10 @@ tests/                 node:test unit tests for parsers/analytics
 ### Data sources (public only)
 | Platform | Data | Source |
 |---|---|---|
-| TikTok | Profile | `tiktok.com/@user` SSR JSON |
+| TikTok | Profile | `tiktok.com/@user` SSR JSON (via `RELAY_URL` when set) |
 | TikTok | Recent posts | `tiktok.com/embed/@user` + per-video SSR JSON for stats |
 | TikTok | Downloads | video page `playAddr` streamed with the page cookies; tikwm.com `/api/?url=` as a last-resort fallback |
-| TikTok | Stories | tikwm.com `/api/user/story` (empty or `tikwm_blocked` when Cloudflare challenges the server IP; never invented) |
+| TikTok | Stories | tikwm.com `/api/user/story` via `RELAY_URL` when set (empty, `tikwm_blocked`, or honest `tikwm_quota` when the free daily limit is hit; never invented) |
 | TikTok | Profile fallback | tikwm.com `/api/user/info` when the official page is blocked or thin; countik.com language + video-id hints. Country from videos only (not invented for zero-post accounts) |
 | Instagram | Profile + 12 posts | `web_profile_info` public endpoint |
 | Instagram | Single post | `/p/{code}/embed/captioned/` |
@@ -77,7 +77,7 @@ Render Blueprint: `render.yaml`. Note: free instances have an ephemeral disk; at
 Instagram answers shared datacenter IPs (like Render's free tier) with HTTP 429 / login redirects.
 The adapter tries: session web API → session app API → anonymous → public link preview (rotating unfurl agents),
 and serves the last good copy for 24h when blocked. Set `SCRAPER_PROXY=http://user:pass@host:port`
-(residential or home-router proxy) to route Instagram, TikTok, and tikwm.com/countik.com fallbacks through a clean IP. `/api/health?ig=1` shows the last
+(residential or home-router proxy) to route Instagram, TikTok, and tikwm.com/countik.com fallbacks through a clean IP. For TikTok/tikwm/countik only, `RELAY_URL` (a Cloudflare Worker such as `https://name.workers.dev`) is a lighter alternative to a residential proxy. `/api/health?ig=1` shows the last
 lookup's per-step HTTP statuses (no cookie values).
 
 ## Followers lists (method chain)
@@ -94,7 +94,7 @@ Country = `locationCreated` of the latest public videos (where they were posted)
 A secret control panel lives at `/<ADMIN_PATH>/` (random slug in Render env; every other admin-like path returns 404).
 Login is password-only (bcrypt hash in `ADMIN_PASSWORD_HASH`, 5 attempts / 15 min / IP, 12 h signed httpOnly cookie scoped to the panel path).
 From the panel you can edit the site name and all home/footer copy, the announcement banner, SEO (titles, description, keywords,
-Google/Bing verification, robots on/off), favicon / OG / hero images, `SCRAPER_PROXY` (with a live test), Instagram/TikTok sessions and keys,
+Google/Bing verification, robots on/off), favicon / OG / hero images, `SCRAPER_PROXY` and `RELAY_URL` (each with a live test), Instagram/TikTok sessions and keys,
 feature toggles, Pro prices, DEMO_MODE, accent colours and default theme, plus a status page with "clear cache".
 
 Persistence: settings are committed to a **private GitHub repo** (`ADMIN_DATA_REPO`) through a write-only deploy key scoped to that repo

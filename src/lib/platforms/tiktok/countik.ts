@@ -2,7 +2,7 @@ import "server-only";
 /**
  * Optional countik.com hints: account language and recent video ids
  * used only to look up a video region (never invents a country).
- * Requests go through SCRAPER_PROXY when it is set.
+ * Requests go through RELAY_URL when set, otherwise SCRAPER_PROXY.
  */
 import { httpGet } from "../../server/http";
 import { parseJsonBody, thirdPartyBlocked } from "./fallback-http";

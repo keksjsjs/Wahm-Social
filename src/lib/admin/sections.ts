@@ -1,5 +1,6 @@
 import type { SiteSettings } from "../site/types";
 import { isHexColor } from "../site/themeCss";
+import { validateRelayUrl } from "../server/relay";
 import { bi, bool, lines, num, str } from "./formRead";
 
 /** Form → settings mutators, one per panel section. */
@@ -52,6 +53,15 @@ export const SECTION_PARSERS: Record<string, (s: SiteSettings, f: FormData) => S
     };
     return s;
   },
+  relay(s, f) {
+    const v = str(f, "relayUrl", 500);
+    if (v) {
+      const bad = validateRelayUrl(v);
+      if (bad) throw new Error(bad);
+    }
+    s.relayUrl = v;
+    return s;
+  },
   theme(s, f) {
     if (f.get("reset") === "on") {
       s.theme.accentPrimary = "";
@@ -68,4 +78,4 @@ export const SECTION_PARSERS: Record<string, (s: SiteSettings, f: FormData) => S
   },
 };
 
-export const SECTION_PAGE: Record<string, string> = { texts: "texts", banner: "texts", seo: "seo", features: "features", theme: "theme" };
+export const SECTION_PAGE: Record<string, string> = { texts: "texts", banner: "texts", seo: "seo", features: "features", theme: "theme", relay: "proxy" };

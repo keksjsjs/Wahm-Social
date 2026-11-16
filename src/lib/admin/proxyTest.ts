@@ -1,6 +1,9 @@
 import "server-only";
 import { DESKTOP_UA, looksLikeBotWall, proxiedFetch } from "../server/http";
 import { thirdPartyBlocked } from "../platforms/tiktok/fallback-http";
+import { readRelayUrl, rewriteViaRelay, validateRelayUrl } from "../server/relay";
+
+export { validateRelayUrl } from "../server/relay";
 
 export function validateProxyUrl(v: string): string | null {
   try {
@@ -46,5 +49,59 @@ export async function runProxyTest(candidate?: string): Promise<string> {
       clearTimeout(timer);
     }
   }
+  return lines.join("\n");
+}
+
+const RELAY_TIKTOK = "https://www.tiktok.com/@khaby.lame";
+
+/** Fetch a TikTok profile and countik through the Worker relay. */
+export async function runRelayTest(candidate?: string): Promise<string> {
+  const base = readRelayUrl(candidate);
+  if (!base) return "ما فيه RELAY_URL — اكتب رابط الـ Worker أولاً (مثال: https://name.workers.dev).";
+  const bad = validateRelayUrl(base);
+  if (bad) return bad;
+  const lines = [candidate ? "الاختبار عبر الـ Worker (الرابط اللي كتبته):" : "الاختبار عبر الـ Worker (المحفوظ):"];
+  const ping = async (label: string, target: string, check: (status: number, text: string) => string) => {
+    const t0 = Date.now();
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 15_000);
+    try {
+      const res = await fetch(rewriteViaRelay(target, base), {
+        headers: { accept: "text/html,application/json;q=0.9,*/*;q=0.8" },
+        signal: ctrl.signal,
+        cache: "no-store",
+      });
+      const text = await res.text();
+      const verdict = check(res.status, text);
+      lines.push(`• ${label}: HTTP ${res.status} ${verdict} (${((Date.now() - t0) / 1000).toFixed(1)}s)`);
+      return { status: res.status, text };
+    } catch (e) {
+      lines.push(`• ${label}: ❌ فشل الاتصال (${String((e as Error).name === "AbortError" ? "timeout" : (e as Error).message).slice(0, 80)})`);
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
+  const tiktok = await ping("tiktok.com profile", RELAY_TIKTOK, (status, text) => {
+    const hasData = /__UNIVERSAL_DATA_FOR_REHYDRATION__/.test(text);
+    const blocked = looksLikeBotWall(text) || /_wafchallengeid|tiktok-verify-page|captcha/i.test(text.slice(0, 20000));
+    if (status >= 200 && status < 400 && hasData && !blocked) return "✅ يشتغل (بيانات الحساب وصلت)";
+    if (blocked) return "⛔ محجوب (صفحة تحقق)";
+    return "⚠️ رد بدون بيانات الحساب";
+  });
+
+  let countikTarget = "https://countik.com/api/userinfo?sec_user_id=test";
+  if (tiktok?.text) {
+    const m = tiktok.text.match(/"secUid":"([^"]+)"/);
+    if (m) countikTarget = `https://countik.com/api/userinfo?sec_user_id=${encodeURIComponent(m[1])}`;
+  }
+  await ping("countik.com", countikTarget, (status, text) => {
+    const json = text.trimStart().startsWith("{") || text.trimStart().startsWith("[");
+    const blocked = thirdPartyBlocked(status, text) || status === 403;
+    if (status >= 200 && status < 400 && json && !blocked) return "✅ يشتغل (JSON)";
+    if (blocked) return "⛔ محجوب (Cloudflare/تحقق)";
+    return "⚠️";
+  });
   return lines.join("\n");
 }

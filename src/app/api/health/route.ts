@@ -8,6 +8,7 @@ import { lastBrowserListTry } from "@/lib/platforms/tiktok/followers/browser";
 import { regionTry } from "@/lib/platforms/tiktok/region";
 import { tikwmTry } from "@/lib/platforms/tiktok/tikwm";
 import { countikTry } from "@/lib/platforms/tiktok/countik";
+import { relayTry } from "@/lib/server/relay";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,8 @@ export function GET(req: NextRequest) {
       ? {
           // Presence flags and last attempt statuses only — never cookie values.
           scraperProxy: Boolean(env.scraperProxy),
+          relayUrl: Boolean(env.relayUrl),
+          relayLastTry: relayTry(),
           tiktokSession: Boolean(env.tiktokSessionId),
           tiktokCookie: Boolean(env.tiktokCookie),
           tiktokSessionFlags: sessionConfigured(),

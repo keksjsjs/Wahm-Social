@@ -39,3 +39,18 @@ export function asNum(v: unknown): number | undefined {
 export function isRecord(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === "object" && !Array.isArray(v);
 }
+
+export { RELAY_HOSTS, isRelayHost, readRelayUrl, rewriteViaRelay, shouldRelay } from "../../server/relay";
+
+/** tikwm `code: -1` daily free-tier quota (honest — not treated as empty/blocked). */
+export function isTikwmQuota(json: unknown, text = ""): boolean {
+  const msg = (() => {
+    if (json && typeof json === "object" && !Array.isArray(json)) {
+      const rec = json as Record<string, unknown>;
+      const m = rec.msg ?? rec.message;
+      if (typeof m === "string") return m;
+    }
+    return text;
+  })();
+  return /free api limit|api limit|request\/\s*\d+|quota/i.test(msg);
+}

@@ -44,7 +44,7 @@ async function withFallback<T>(key: string, ttl: number, live: () => Promise<T>,
 }
 
 export function getProfile(platform: Platform, username: string): Promise<Sourced<Profile>> {
-  return withFallback(`profile:${platform}:${username}`, TTL.profile, () => adapters[platform].getProfile(username), () => demoProfile(platform, username));
+  return withFallback(`profile:${platform}:${username}:v2`, TTL.profile, () => adapters[platform].getProfile(username), () => demoProfile(platform, username));
 }
 
 const IG_POSTS_NOTICE =
@@ -79,17 +79,25 @@ export async function getPost(platform: Platform, ref: string, username?: string
 }
 
 const TIKWM_BLOCKED_NOTICE =
-  "مصدر الستوري الاحتياطي (tikwm) محجوب من عنوان السيرفر حالياً. أضف بروكسي سكني أو منزلي في SCRAPER_PROXY ثم أعد المحاولة. The tikwm stories fallback is blocked from this server IP — set a residential or home-router proxy in SCRAPER_PROXY and try again.";
+  "مصدر الستوري الاحتياطي (tikwm) محجوب من عنوان السيرفر حالياً. أضف مسار Worker في RELAY_URL أو بروكسي سكني في SCRAPER_PROXY ثم أعد المحاولة. The tikwm stories fallback is blocked from this server IP — set RELAY_URL or a residential proxy in SCRAPER_PROXY and try again.";
+
+const TIKWM_QUOTA_NOTICE =
+  "tikwm وصلت حدّها اليومي المجاني، فما نقدر نجيب الستوريات الحين. جرّب لاحقاً بعد ما يتجدد العداد. The tikwm free daily quota is exhausted; stories will return when it resets."
 
 export async function getStories(platform: Platform, username: string): Promise<Sourced<Story[]>> {
   if (!featureOn("stories")) return { data: [], source: "live", notice: DISABLED_MSG.stories };
   if (platform === "tiktok" && env.demoMode !== "on") {
     try {
-      const [payload, fromCache] = await cached(`stories:${platform}:${username}:v2`, TTL.stories, async () => {
+      const [payload, fromCache] = await cached(`stories:${platform}:${username}:v3`, TTL.stories, async () => {
         const items = await adapters.tiktok.getStories(username);
         return { items, note: tikwmStoriesNote() };
       });
-      const notice = payload.note === "tikwm_blocked" || payload.note === "tikwm_error" ? TIKWM_BLOCKED_NOTICE : undefined;
+      const notice =
+        payload.note === "tikwm_quota"
+          ? TIKWM_QUOTA_NOTICE
+          : payload.note === "tikwm_blocked" || payload.note === "tikwm_error"
+            ? TIKWM_BLOCKED_NOTICE
+            : undefined;
       return { data: payload.items, source: fromCache ? "cache" : "live", notice };
     } catch (e) {
       if (e instanceof PlatformError && (e.code === "blocked" || e.code === "upstream_error")) {
