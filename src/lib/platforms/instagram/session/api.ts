@@ -14,7 +14,7 @@ export type IgJson = { ok: true; json: any; attempt: IgAttempt } | { ok: false; 
 export async function igJson(url: string, client: IgClient, referer?: string): Promise<IgJson> {
   const host = new URL(url).host;
   try {
-    const res = await httpGet(url, { headers: igHeaders(client, referer), retries: 1, timeoutMs: 10000 });
+    const res = await httpGet(url, { headers: igHeaders(client, referer), retries: 1, timeoutMs: 10000, proxy: true });
     const body = res.text.trimStart();
     if (!body.startsWith("{")) {
       const login = /accounts\/login/.test(res.url) || /"loginPage"|login_and_signup_page/.test(body.slice(0, 5000));

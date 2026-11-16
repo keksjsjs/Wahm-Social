@@ -15,6 +15,8 @@ export interface FetchOptions {
   retries?: number;
   method?: string;
   body?: string;
+  /** Route through SCRAPER_PROXY when it is configured (Instagram blocks shared datacenter IPs). */
+  proxy?: boolean;
 }
 
 export interface FetchResult {
@@ -33,7 +35,8 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
     try {
-      const res = await fetch(url, {
+      const doFetch = opts.proxy ? await proxiedFetch() : null;
+      const res = await (doFetch ?? fetch)(url, {
         method: opts.method ?? "GET",
         body: opts.body,
         headers: {
@@ -45,7 +48,7 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
         redirect: "follow",
         signal: ctrl.signal,
         cache: "no-store",
-      });
+      } as RequestInit);
       const text = await res.text();
       if (res.status >= 500 && attempt < retries) {
         await sleep(400 * (attempt + 1));
@@ -86,4 +89,17 @@ export function cookiesFrom(headers: Headers): string {
 
 export function looksLikeBotWall(html: string): boolean {
   return /Just a moment\.\.\.|captcha|challenge-platform|Please wait\.\.\./i.test(html.slice(0, 4000));
+}
+
+let proxyFetch: typeof fetch | null | undefined;
+/** fetch bound to SCRAPER_PROXY (http(s)://user:pass@host:port), or null when not configured. */
+async function proxiedFetch(): Promise<typeof fetch | null> {
+  if (proxyFetch !== undefined) return proxyFetch;
+  const url = process.env.SCRAPER_PROXY;
+  if (!url) return (proxyFetch = null);
+  const { ProxyAgent, fetch: ufetch } = await import("undici");
+  const dispatcher = new ProxyAgent(url);
+  proxyFetch = ((input: string, init?: RequestInit) =>
+    ufetch(input, { ...(init as object), dispatcher } as never)) as unknown as typeof fetch;
+  return proxyFetch;
 }

@@ -20,6 +20,7 @@ export function GET(req: NextRequest) {
     ...(deep
       ? {
           // Presence flags and last attempt statuses only — never cookie values.
+          scraperProxy: Boolean(env.scraperProxy),
           instagramCookies: { csrftoken: !!env.igCsrfToken, ds_user_id: !!env.igDsUserId, mid: !!env.igMid, datr: !!env.igDatr },
           instagramLastLookup: lastIgLookup(),
           tiktokResearch: researchStatus(),

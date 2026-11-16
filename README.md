@@ -70,3 +70,10 @@ Render Blueprint: `render.yaml`. Note: free instances have an ephemeral disk; at
 
 ## Extra env vars
 - `TIKTOK_CLIENT_KEY`, `TIKTOK_CLIENT_SECRET` — TikTok Research API credentials (optional) for public follower/following lists.
+
+## Instagram reliability
+Instagram answers shared datacenter IPs (like Render's free tier) with HTTP 429 / login redirects.
+The adapter tries: session web API → session app API → anonymous → public link preview (rotating unfurl agents),
+and serves the last good copy for 24h when blocked. Set `SCRAPER_PROXY=http://user:pass@host:port`
+(residential proxy) to route all Instagram requests through a clean IP. `/api/health?ig=1` shows the last
+lookup's per-step HTTP statuses (no cookie values).

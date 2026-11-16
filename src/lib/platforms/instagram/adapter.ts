@@ -79,16 +79,26 @@ async function previewProfile(username: string): Promise<Profile | "missing" | n
   return bare === 3 ? "missing" : null;
 }
 
+/** Last good profile per username — served when Instagram temporarily blocks the server. */
+const lastGood = new Map<string, { profile: Profile; at: number }>();
+const remember = (p: Profile) => {
+  lastGood.set(p.username.toLowerCase(), { profile: p, at: Date.now() });
+  if (lastGood.size > 2000) lastGood.delete(lastGood.keys().next().value as string);
+  return p;
+};
+
 export const instagram: PlatformAdapter = {
   platform: "instagram",
 
   async getProfile(username): Promise<Profile> {
     const r = await lookup(username);
-    if ("found" in r) return r.found.profile;
+    if ("found" in r) return remember(r.found.profile);
     // API refused or said "empty": the public preview is the tie-breaker before we call it missing.
     const p = await previewProfile(username);
     recordIg(username, r.attempts, p && p !== "missing" ? "preview" : p === "missing" || "missing" in r ? "empty" : "blocked");
-    if (p && p !== "missing") return p;
+    if (p && p !== "missing") return remember(p);
+    const stale = lastGood.get(username.toLowerCase());
+    if (p !== "missing" && stale && Date.now() - stale.at < 24 * 3600_000) return stale.profile;
     if (p === "missing" || "missing" in r) throw new PlatformError("not_found", `@${username} was not found on Instagram`, 404);
     throw new PlatformError("blocked", "Instagram is temporarily refusing lookups from this server. Please try again in a minute.", 503);
   },
@@ -102,7 +112,7 @@ export const instagram: PlatformAdapter = {
   async getPost(idOrUrl): Promise<Post> {
     const { shortcode } = parseInstagramRef(idOrUrl);
     if (!shortcode) throw new PlatformError("invalid_input", "Paste a valid Instagram post or reel link", 400);
-    const res = await httpGet(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, { retries: 0 });
+    const res = await httpGet(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, { retries: 0, proxy: true });
     if (res.status === 404) throw new PlatformError("not_found", "Post not found or not public", 404);
     const post = parseEmbedHtml(res.text, shortcode);
     if (post) return post;

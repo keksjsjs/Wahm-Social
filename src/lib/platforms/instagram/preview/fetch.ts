@@ -13,6 +13,7 @@ export async function fetchPreview(path: string, attempt = 0): Promise<string> {
   const res = await httpGet(`https://www.instagram.com${path}`, {
     headers: { "user-agent": PREVIEW_UAS[attempt % PREVIEW_UAS.length], accept: "text/html" },
     retries: 0,
+    proxy: true,
     timeoutMs: 10000,
   });
   if (res.status === 404) throw new PlatformError("not_found", "Not found on Instagram", 404);
