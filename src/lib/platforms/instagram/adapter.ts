@@ -169,8 +169,15 @@ async function webProfile(username: string): Promise<WebProfile> {
  */
 async function previewProfile(username: string): Promise<Profile | "missing" | null> {
   let bare = 0;
-  for (let i = 0; i < PREVIEW_TRIES; i++) {
-    if (i) await new Promise((r) => setTimeout(r, 300 * i));
+  // Round 1 walks all unfurl agents; round 2 (after a short pause) retries the first three.
+  const order = [...Array(PREVIEW_TRIES).keys(), -1, 0, 1, 2];
+  for (let n = 0; n < order.length; n++) {
+    const i = order[n];
+    if (i === -1) {
+      await new Promise((r) => setTimeout(r, 1500));
+      continue;
+    }
+    if (n) await new Promise((r) => setTimeout(r, 250));
     try {
       const p = parseOgProfile(await fetchPreview(`/${encodeURIComponent(username)}/`, i), username);
       if (p) return p;
@@ -178,8 +185,9 @@ async function previewProfile(username: string): Promise<Profile | "missing" | n
     } catch (e) {
       if (e instanceof PlatformError && e.code === "not_found") return "missing";
     }
+    if (n === PREVIEW_TRIES - 1 && bare === PREVIEW_TRIES) return "missing";
   }
-  return bare >= 3 && bare === PREVIEW_TRIES ? "missing" : null;
+  return null;
 }
 
 /** Last good profile per username — served when Instagram temporarily blocks the server. */
