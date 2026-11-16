@@ -1,0 +1,70 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { getDict } from "@/lib/i18n/server";
+import { ARTICLES, articleBySlug } from "@/lib/content/blog";
+import { absUrl, buildMetadata, jsonLdBreadcrumbs } from "@/lib/seo";
+import { Markdown } from "@/components/content/Markdown";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SearchBox } from "@/components/search/SearchBox";
+
+export function generateStaticParams() {
+  return ARTICLES.map((a) => ({ slug: a.slug }));
+}
+
+export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
+  const a = articleBySlug(params.slug);
+  if (!a) return {};
+  return buildMetadata({ title: `${a.title.ar} | Wahm Blog`, description: a.excerpt.ar, path: `/blog/${a.slug}`, type: "article", keywords: a.tags });
+}
+
+export default function ArticlePage({ params }: { params: { slug: string } }) {
+  const a = articleBySlug(params.slug);
+  if (!a) notFound();
+  const { locale, t } = getDict();
+  const related = ARTICLES.filter((x) => x.slug !== a.slug && x.tags.some((tg) => a.tags.includes(tg))).slice(0, 3);
+  return (
+    <article className="container-w max-w-3xl py-14">
+      <JsonLd
+        data={[
+          {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            headline: a.title[locale],
+            description: a.excerpt[locale],
+            datePublished: a.date,
+            author: { "@type": "Organization", name: "Wahm Social" },
+            mainEntityOfPage: absUrl(`/blog/${a.slug}`),
+          },
+          jsonLdBreadcrumbs([
+            { name: "Wahm Social", path: "/" },
+            { name: t.nav.blog, path: "/blog" },
+            { name: a.title[locale], path: `/blog/${a.slug}` },
+          ]),
+        ]}
+      />
+      <Link href="/blog" className="text-sm text-gold-300 hover:underline">
+        ← {t.nav.blog}
+      </Link>
+      <h1 className="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl">{a.title[locale]}</h1>
+      <div className="mt-3 text-sm text-slate-500">{a.date}</div>
+      <div className="card mt-8 p-6 sm:p-10">
+        <Markdown source={a.body[locale]} />
+      </div>
+      <div className="mt-10">
+        <SearchBox size="md" />
+      </div>
+      {related.length > 0 && (
+        <div className="mt-12 grid gap-3 md:grid-cols-3">
+          {related.map((r) => (
+            <Link key={r.slug} href={`/blog/${r.slug}`} className="card card-hover p-4 text-sm font-semibold text-white">
+              {r.title[locale]}
+            </Link>
+          ))}
+        </div>
+      )}
+    </article>
+  );
+}
+
+export const dynamic = "force-dynamic";

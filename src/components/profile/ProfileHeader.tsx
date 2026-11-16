@@ -1,0 +1,59 @@
+import type { Profile } from "@/lib/platforms/types";
+import type { Dict, Locale } from "@/lib/i18n";
+import { compact, date } from "@/lib/format";
+import { Avatar, Badge, PlatformIcon, VerifiedIcon } from "../ui";
+import { ProfileActions } from "./ProfileActions";
+
+export function ProfileHeader({ p, t, locale, canPro }: { p: Profile; t: Dict; locale: Locale; canPro: boolean }) {
+  const stats = [
+    { label: t.profile.followers, value: compact(p.followers, locale) },
+    { label: t.profile.following, value: compact(p.following, locale) },
+    ...(p.likes !== undefined ? [{ label: t.profile.likes, value: compact(p.likes, locale) }] : []),
+    { label: t.profile.posts, value: compact(p.postsCount, locale) },
+  ];
+  return (
+    <section className="card relative overflow-hidden p-6 sm:p-8">
+      <div className="pointer-events-none absolute -top-24 end-0 h-64 w-64 rounded-full bg-gold-500/10 blur-3xl" />
+      <div className="relative flex flex-col items-center gap-6 sm:flex-row sm:items-start">
+        <Avatar src={p.avatarUrl} alt={p.displayName} size={128} />
+        <div className="min-w-0 flex-1 text-center sm:text-start">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+            <h1 className="text-2xl font-extrabold text-white sm:text-3xl">{p.displayName}</h1>
+            {p.verified && <VerifiedIcon />}
+            {p.isPrivate && <Badge tone="red">🔒 {t.profile.private}</Badge>}
+            {p.isBusiness && <Badge tone="blue">{t.profile.business}</Badge>}
+          </div>
+          <div className="mt-1 flex items-center justify-center gap-2 text-slate-400 sm:justify-start" dir="ltr">
+            <PlatformIcon platform={p.platform} />@{p.username}
+          </div>
+          {p.category && <div className="mt-1 text-sm text-gold-300">{p.category}</div>}
+          {p.bio && <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-300">{p.bio}</p>}
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 sm:justify-start">
+            {p.createdAt && (
+              <span>
+                {t.profile.joined} {date(p.createdAt, locale)}
+              </span>
+            )}
+            {p.externalUrl && (
+              <a href={p.externalUrl} target="_blank" rel="nofollow noopener noreferrer" className="text-sky-300 hover:underline" dir="ltr">
+                {p.externalUrl.replace(/^https?:\/\//, "").slice(0, 40)}
+              </a>
+            )}
+            <a href={p.profileUrl} target="_blank" rel="nofollow noopener noreferrer" className="text-gold-300 hover:underline">
+              {t.profile.openOn} {p.platform === "tiktok" ? "TikTok" : "Instagram"} ↗
+            </a>
+          </div>
+        </div>
+        <ProfileActions platform={p.platform} username={p.username} canPro={canPro} />
+      </div>
+      <div className="relative mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-xl border border-white/[0.06] bg-navy-950/50 px-4 py-3 text-center">
+            <div className="text-xl font-black text-white">{s.value}</div>
+            <div className="text-xs text-slate-400">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
