@@ -2,6 +2,7 @@ import "server-only";
 import { DESKTOP_UA, looksLikeBotWall, proxiedFetch, proxyList } from "../server/http";
 import { thirdPartyBlocked } from "../platforms/tiktok/fallback-http";
 import { readRelayUrl, rewriteViaRelay, validateRelayUrl } from "../server/relay";
+import { validateProxy } from "../pools/validate";
 
 export { validateRelayUrl } from "../server/relay";
 
@@ -16,16 +17,7 @@ export function validateProxyUrl(v: string): string | null {
   return null;
 }
 
-function validateOneProxy(v: string): string | null {
-  try {
-    const u = new URL(v);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return "البروكسي لازم يبدأ بـ http:// أو https:// (SOCKS غير مدعوم حالياً)";
-    if (!u.hostname || !u.port) return "اكتب الرابط كامل مع البورت: http://user:pass@host:port";
-    return null;
-  } catch {
-    return "رابط البروكسي غير صالح";
-  }
-}
+const validateOneProxy = validateProxy;
 
 const TARGETS: [string, string][] = [
   ["tiktok.com", "https://www.tiktok.com/@tiktok"],

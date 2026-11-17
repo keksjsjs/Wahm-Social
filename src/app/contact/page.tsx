@@ -2,11 +2,14 @@ import { getDict } from "@/lib/i18n/server";
 import { PAGES } from "@/lib/content/pages";
 import { buildMetadata } from "@/lib/seo";
 import { StaticPage } from "@/components/content/StaticPage";
+import { pageBody } from "@/lib/content/visible";
 
 const page = PAGES["contact"];
 export const metadata = buildMetadata({ title: `${page.title.ar} | ${page.title.en} — Frostly`, path: "/contact" });
 
 export default function Page() {
   const { locale } = getDict();
-  return <StaticPage title={page.title[locale]} body={page.body[locale]} />;
+  return <StaticPage title={page.title[locale]} body={pageBody("contact", locale)} />;
 }
+
+export const dynamic = "force-dynamic";

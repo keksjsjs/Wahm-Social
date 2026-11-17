@@ -5,6 +5,8 @@ import type { SiteSettings } from "./types";
 export interface PublicSite {
   platforms: Platform[];
   followers: boolean;
+  following: boolean;
+  analytics: boolean;
   stories: boolean;
   downloads: boolean;
   pro: boolean;
@@ -19,6 +21,8 @@ export function publicSite(s: SiteSettings): PublicSite {
   return {
     platforms: platforms.length ? platforms : ["tiktok"],
     followers: f.followers,
+    following: f.following !== false,
+    analytics: f.analytics !== false,
     stories: f.stories,
     downloads: f.downloads,
     pro: f.pro,
@@ -31,6 +35,8 @@ export function publicSite(s: SiteSettings): PublicSite {
 export const DEFAULT_PUBLIC_SITE: PublicSite = {
   platforms: ["tiktok", "instagram"],
   followers: true,
+  following: true,
+  analytics: true,
   stories: true,
   downloads: true,
   pro: true,

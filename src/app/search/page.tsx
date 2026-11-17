@@ -5,10 +5,13 @@ import { SearchBox } from "@/components/search/SearchBox";
 import { routeForQuery } from "@/lib/route";
 import { PageHeader } from "@/components/ui";
 import type { Platform } from "@/lib/platforms/types";
+import { featureOn } from "@/lib/site/flags";
+import { FeatureOff } from "@/components/ui/FeatureOff";
 
 export const metadata = buildMetadata({ title: "بحث | Frostly", path: "/search", noindex: true });
 
 export default function SearchPage({ searchParams }: { searchParams: { q?: string; p?: string } }) {
+  if (!featureOn("search")) return <div className="container-w py-10"><FeatureOff feature="search" /></div>;
   const platform: Platform = searchParams.p === "instagram" ? "instagram" : "tiktok";
   if (searchParams.q) {
     const href = routeForQuery(searchParams.q, platform);

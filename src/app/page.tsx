@@ -10,7 +10,7 @@ import { FeatureGrid } from "@/components/content/FeatureGrid";
 import { Faq } from "@/components/content/Faq";
 import { FAQ } from "@/lib/content/faq";
 import { FEATURED } from "@/lib/content/featured";
-import { ARTICLES } from "@/lib/content/blog";
+import { visibleArticles } from "@/lib/content/visible";
 import { Searches } from "@/lib/server/db";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { buildMetadata, jsonLdFaq, jsonLdSoftware } from "@/lib/seo";
@@ -123,6 +123,7 @@ export default async function Home() {
         <PricingTable currentPlan={user?.plan ?? null} mock={billingMode() === "mock"} />
       </section>
 
+      {visibleArticles().length > 0 && (
       <section className="container-w py-12">
         <div className="mb-6 flex items-end justify-between">
           <h2 className="section-title">{t.nav.blog}</h2>
@@ -131,7 +132,7 @@ export default async function Home() {
           </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          {ARTICLES.slice(0, 3).map((a) => (
+          {visibleArticles().slice(0, 3).map((a) => (
             <Link key={a.slug} href={`/blog/${a.slug}`} className="card card-hover p-6">
               <div className="text-xs text-accent-500 dark:text-accent-400">{a.date}</div>
               <h3 className="mt-2 font-bold leading-7 text-ink">{a.title[locale]}</h3>
@@ -140,6 +141,7 @@ export default async function Home() {
           ))}
         </div>
       </section>
+      )}
 
       <section className="container-w py-12">
         <h2 className="section-title mb-8 text-center">{locale === "ar" ? "عمليات البحث الشائعة" : "Popular searches"}</h2>

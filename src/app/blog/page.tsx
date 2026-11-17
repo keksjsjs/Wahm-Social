@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getDict } from "@/lib/i18n/server";
-import { ARTICLES } from "@/lib/content/blog";
+import { notFound } from "next/navigation";
+import { blogEnabled, visibleArticles } from "@/lib/content/visible";
 import { buildMetadata } from "@/lib/seo";
 import { PageHeader } from "@/components/ui";
 
@@ -11,12 +12,13 @@ export const metadata = buildMetadata({
 });
 
 export default function BlogIndex() {
+  if (!blogEnabled()) notFound();
   const { t, locale } = getDict();
   return (
     <div className="container-w pb-10">
       <PageHeader title={t.nav.blog} subtitle={t.tagline} />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {ARTICLES.map((a) => (
+        {visibleArticles().map((a) => (
           <Link key={a.slug} href={`/blog/${a.slug}`} className="card card-hover flex flex-col p-6">
             <div className="flex gap-2">
               {a.tags.map((tag) => (

@@ -17,13 +17,15 @@ import { webList } from "../tiktok/followers/web";
 import { igFriendships } from "../instagram/session/friendships";
 import { hasSession } from "../instagram/session/cookies";
 import { lockedResult, listUrl, visibilityOf } from "./visibility";
+import { followersShow } from "./show";
+import { rotateSession } from "../../pools/apply";
+import { logError } from "../../server/errorLog";
 
 const TTL = 30 * 60_000;
 let lastResearchError: string | null = null;
 /** Last TikTok Research API error message (no secrets), for /api/health?ig=1. */
 export const researchStatus = () => (tiktokResearch.enabled ? lastResearchError ?? "configured" : "not_configured");
 
-const SHOW = 5;
 
 async function tiktokList(profile: Profile, kind: "followers" | "following", cursor?: string) {
   const attempts: ConnectionAttempt[] = [];
@@ -45,11 +47,17 @@ async function tiktokList(profile: Profile, kind: "followers" | "following", cur
     const methods = (["session", "web_public", "mobile_web"] as const);
     for (const method of methods) {
       if (method !== "session" && !profile.secUid) continue;
-      const r = await webList(profile.username, profile.secUid || "", kind, method);
+      let r = await webList(profile.username, profile.secUid || "", kind, method);
       attempts.push(r.attempt);
+      // Several TikTok sessions saved in the panel → switch to the next one and retry once.
+      if (!r.items.length && method === "session" && r.attempt.note !== "not_configured" && rotateSession("tiktok", `followers ${r.attempt.note ?? "failed"}`)) {
+        r = await webList(profile.username, profile.secUid || "", kind, method);
+        attempts.push({ ...r.attempt, note: `${r.attempt.note ?? ""} (next_session)` });
+      }
       if (r.items.length) return { items: r.items, nextCursor: null, provider: `tiktok-${method}`, attempts };
     }
   }
+  logError("tiktok", `@${profile.username} ${kind}: no list — ${attempts.map((a) => `${a.method}=${a.note ?? (a.ok ? "ok" : "fail")}`).join(", ")}`);
   return { items: [], nextCursor: null, provider: undefined, attempts };
 }
 
@@ -65,7 +73,7 @@ export async function connectionsFor(profile: Profile, kind: "followers" | "foll
       // Cache hits briefly; empty results expire fast so a fresh session cookie can recover.
       const [r] = await cached(key, 2 * 60_000, () => tiktokList(profile, kind, cursor));
       if (r.items.length) {
-        return { available: true, visibility: "public", total, items: r.items.slice(0, SHOW), nextCursor: r.nextCursor, provider: r.provider, platformUrl: listUrl(profile, kind), attempts: r.attempts };
+        return { available: true, visibility: "public", total, items: r.items.slice(0, followersShow()), nextCursor: r.nextCursor, provider: r.provider, platformUrl: listUrl(profile, kind), attempts: r.attempts };
       }
       // Do not keep empty failures around — delete so the next request retries upstream.
       cache.delete(key);
@@ -82,7 +90,7 @@ export async function connectionsFor(profile: Profile, kind: "followers" | "foll
       const [items] = await cached(key, TTL, () => igFriendships(profile.id, profile.username, kind));
       attempts.push({ method: "instagram_session", ok: items.length > 0, note: items.length ? "ok" : "empty" });
       if (items.length) {
-        return { available: true, visibility: "public", total, items: items.slice(0, SHOW), provider: "instagram-session", platformUrl: listUrl(profile, kind), attempts };
+        return { available: true, visibility: "public", total, items: items.slice(0, followersShow()), provider: "instagram-session", platformUrl: listUrl(profile, kind), attempts };
       }
     } catch {
       attempts.push({ method: "instagram_session", ok: false, note: "blocked" });

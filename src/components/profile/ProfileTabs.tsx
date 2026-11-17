@@ -16,7 +16,17 @@ export function ProfileTabs({ platform, username, t }: { platform: Platform; use
     { key: "analytics", href: `${base}/analytics`, label: t.profile.tabs.analytics },
     { key: "followers", href: `${base}/followers`, label: t.profile.tabs.followers },
     { key: "following", href: `${base}/following`, label: t.profile.tabs.following },
-  ].filter((x) => (x.key === "stories" ? site.stories : x.key === "followers" || x.key === "following" ? site.followers : true));
+  ].filter((x) =>
+    x.key === "stories"
+      ? site.stories
+      : x.key === "followers"
+        ? site.followers
+        : x.key === "following"
+          ? site.following
+          : x.key === "analytics"
+            ? site.analytics
+            : true,
+  );
   const active = tabs.slice(1).find((x) => path.startsWith(x.href))?.key ?? "posts";
   return <TabLinks tabs={tabs} active={active} />;
 }

@@ -5,6 +5,7 @@
 import { SECRET_DEFS } from "../admin/secrets-def";
 import type { SiteSettings } from "./types";
 import { setPriceOverrides } from "./prices";
+import { applyPools } from "../pools/apply";
 
 const g = globalThis as unknown as { __frostlyEnvOrig?: Record<string, string | undefined> };
 
@@ -29,6 +30,7 @@ export function applyOverrides(settings: SiteSettings, secrets: Record<string, s
   setEnv("DEMO_MODE", settings.features.demoMode || orig.DEMO_MODE);
   setEnv("RELAY_URL", settings.relayUrl || orig.RELAY_URL);
   setPriceOverrides(settings.features.prices);
+  applyPools(secrets);
 }
 
 /** Value Render had at boot for an env var (to show where an effective value comes from). */

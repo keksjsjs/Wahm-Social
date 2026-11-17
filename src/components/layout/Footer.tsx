@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Dict } from "@/lib/i18n";
 import { LogoMark, Wordmark } from "./Logo";
 import { siteNow } from "@/lib/site/snapshot";
+import { SocialLinks } from "./SocialLinks";
 
 export function Footer({ t }: { t: Dict }) {
   const cols: { title: string; links: [string, string][] }[] = [
@@ -27,7 +28,7 @@ export function Footer({ t }: { t: Dict }) {
       title: t.nav.docs,
       links: [
         ["/docs", t.nav.docs],
-        ["/blog", t.nav.blog],
+        ...(siteNow().blog?.enabled === false ? [] : ([["/blog", t.nav.blog]] as [string, string][])),
         ["/tools/tiktok-downloader", "TikTok Downloader"],
         ["/tools/instagram-downloader", "Instagram Downloader"],
       ],
@@ -67,6 +68,11 @@ export function Footer({ t }: { t: Dict }) {
           </div>
         ))}
       </div>
+      {siteNow().contact && (
+        <div className="container-w pb-6">
+          <SocialLinks c={siteNow().contact} />
+        </div>
+      )}
       <div className="border-t border-line">
         <div className="container-w flex flex-col items-center justify-between gap-2 py-6 text-xs text-ink-4 sm:flex-row">
           <span>{t.footer.disclaimer}</span>

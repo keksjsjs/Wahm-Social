@@ -10,6 +10,10 @@ import { env, billingMode } from "@/lib/env";
 import { dataStore } from "@/lib/admin/storage";
 import { snapshot } from "@/lib/site/snapshot";
 import { timeAgo } from "@/lib/format";
+import { activeProxyIndex, proxyList } from "@/lib/server/http";
+import { relayList } from "@/lib/server/relay";
+import { activeSessionNumber } from "@/lib/pools/apply";
+import { recentErrors } from "@/lib/server/errorLog";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +24,8 @@ export default async function Overview({ searchParams }: { searchParams: Flashy 
   const c = cache.stats();
   const st = dataStore().status();
   const snap = snapshot();
+  const igS = activeSessionNumber("instagram");
+  const ttS = activeSessionNumber("tiktok");
   return (
     <PanelShell active="" title="الرئيسية" flash={searchParams}>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
@@ -33,8 +39,11 @@ export default async function Overview({ searchParams }: { searchParams: Flashy 
         <ul className="grid gap-2 text-sm text-ink-2 md:grid-cols-2">
           <li>💾 التخزين: {st.detail} — {st.kind === "git" ? (st.ok ? "✅ متصل" : "⚠️ " + (st.lastError || "لم يتصل بعد")) : "⚠️ مؤقت"}</li>
           <li>🕒 آخر تحميل للإعدادات: {snap.loadedAt ? timeAgo(snap.loadedAt, "ar") : "—"}</li>
-          <li>🌐 البروكسي: {env.scraperProxy ? "✅ مضبوط" : "❌ غير مضبوط"}</li>
-          <li>📸 جلسة انستقرام: {env.igSessionId ? "✅" : "❌"} · 🎵 جلسة تيك توك: {env.tiktokCookie || env.tiktokSessionId ? "✅" : "❌"}</li>
+          <li>🌐 البروكسيات: {proxyList().length ? `✅ ${proxyList().length} (النشط #${activeProxyIndex() + 1})` : "❌ غير مضبوط"} · ☁️ Worker: {relayList().length || "❌"}</li>
+          <li>
+            📸 انستقرام: {env.igSessionId ? `✅ ${igS.total > 1 ? `${igS.active}/${igS.total}` : ""}` : "❌"} · 🎵 تيك توك: {env.tiktokCookie || env.tiktokSessionId ? `✅ ${ttS.total > 1 ? `${ttS.active}/${ttS.total}` : ""}` : "❌"}
+          </li>
+          <li>🛠️ وضع الصيانة: {settings.maintenance.enabled ? "⚠️ شغّال" : "مطفي"} · 📜 أخطاء حديثة: {recentErrors().length}</li>
           <li>💳 الدفع: {billingMode()} · وضع التجربة: {env.demoMode}</li>
           <li>📝 آخر تعديل: {settings.updatedAt ? new Date(settings.updatedAt).toLocaleString("ar-SA", { timeZone: "Asia/Riyadh" }) : "لا يوجد"}</li>
         </ul>

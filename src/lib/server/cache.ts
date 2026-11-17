@@ -68,11 +68,24 @@ const g = globalThis as unknown as { __wahmCache?: MemoryLRU; __wahmInflight?: M
 export const cache = (g.__wahmCache ??= new MemoryLRU());
 const inflight = (g.__wahmInflight ??= new Map());
 
+const tg = globalThis as unknown as { __frostlySite?: { settings?: { limits?: Record<string, number> } } };
+/** Minutes from admin settings (snapshot on globalThis, avoids an import cycle), clamped. */
+const mins = (k: string, def: number, min = 0.5, max = 1440) => {
+  const v = Number(tg.__frostlySite?.settings?.limits?.[k]);
+  return (Number.isFinite(v) && v > 0 ? Math.min(max, Math.max(min, v)) : def) * 60_000;
+};
+
 export const TTL = {
-  profile: 10 * 60_000,
-  posts: 10 * 60_000,
+  get profile() {
+    return mins("profileCacheMin", 10);
+  },
+  get posts() {
+    return mins("postsCacheMin", 10);
+  },
   post: 30 * 60_000,
-  stories: 3 * 60_000,
+  get stories() {
+    return mins("storiesCacheMin", 3);
+  },
   stale: 24 * 60 * 60_000,
 };
 

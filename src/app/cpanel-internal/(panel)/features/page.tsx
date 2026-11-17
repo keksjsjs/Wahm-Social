@@ -14,9 +14,14 @@ export default async function FeaturesPage({ searchParams }: { searchParams: Fla
         <div className="grid gap-3 md:grid-cols-2">
           <Toggle name="tiktok" label="منصة تيك توك" checked={f.tiktok} />
           <Toggle name="instagram" label="منصة انستقرام" checked={f.instagram} />
-          <Toggle name="followers" label="تبويب المتابعين / المتابَعين" checked={f.followers} />
+          <Toggle name="followers" label="قائمة المتابعين" checked={f.followers} />
+          <Toggle name="following" label="قائمة المتابَعين (Following)" checked={f.following} />
           <Toggle name="stories" label="الستوري" checked={f.stories} />
           <Toggle name="downloads" label="التحميل" checked={f.downloads} />
+          <Toggle name="posts" label="عرض المنشورات في صفحة الحساب" checked={f.posts} />
+          <Toggle name="region" label="دولة الحساب (من الفيديوهات)" checked={f.region} />
+          <Toggle name="search" label="صفحة البحث" checked={f.search} />
+          <Toggle name="analytics" label="التحليلات" checked={f.analytics} />
           <Toggle name="pro" label="اشتراكات برو (المدفوعة)" checked={f.pro} />
         </div>
         <Select

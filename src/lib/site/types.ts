@@ -35,8 +35,13 @@ export interface FeatureSettings {
   tiktok: boolean;
   instagram: boolean;
   followers: boolean;
+  following: boolean;
   stories: boolean;
   downloads: boolean;
+  region: boolean;
+  posts: boolean;
+  search: boolean;
+  analytics: boolean;
   pro: boolean;
   demoMode: "" | "auto" | "on" | "off";
   prices: { proMonthly: number; proYearly: number; bizMonthly: number; bizYearly: number };
@@ -55,6 +60,53 @@ export interface AssetSettings {
   heroImage: string;
 }
 
+/** Numeric knobs: list sizes, cache TTLs (minutes) and per-IP rate limits (requests/minute). */
+export interface LimitSettings {
+  followersShow: number;
+  profileCacheMin: number;
+  postsCacheMin: number;
+  storiesCacheMin: number;
+  regionCacheMin: number;
+  apiPerMin: number;
+  downloadPerMin: number;
+  streamPerMin: number;
+}
+
+export interface MaintenanceSettings {
+  enabled: boolean;
+  message: Bi;
+}
+
+/** Analytics / verification snippets injected into <head>. */
+export interface HeadSettings {
+  gaId: string;
+  customHead: string;
+}
+
+export interface ContactSettings {
+  email: string;
+  x: string;
+  instagram: string;
+  tiktok: string;
+  youtube: string;
+  telegram: string;
+  whatsapp: string;
+  snapchat: string;
+}
+
+/** Markdown overrides for static pages (empty = built-in text). */
+export interface PagesSettings {
+  about: Bi;
+  privacy: Bi;
+  terms: Bi;
+  contact: Bi;
+}
+
+export interface BlogSettings {
+  enabled: boolean;
+  hidden: string[];
+}
+
 export interface SiteSettings {
   version: number;
   updatedAt: string;
@@ -66,6 +118,12 @@ export interface SiteSettings {
   features: FeatureSettings;
   theme: ThemeSettings;
   assets: AssetSettings;
+  limits: LimitSettings;
+  maintenance: MaintenanceSettings;
+  head: HeadSettings;
+  contact: ContactSettings;
+  pages: PagesSettings;
+  blog: BlogSettings;
 }
 
-export type SettingsSection = "brand" | "texts" | "seo" | "features" | "theme" | "assets" | "relay";
+export type SettingsSection = "brand" | "texts" | "seo" | "features" | "theme" | "assets" | "relay" | "limits" | "maintenance" | "head" | "contact" | "pages" | "blog";

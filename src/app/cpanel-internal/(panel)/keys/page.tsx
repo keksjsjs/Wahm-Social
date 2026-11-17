@@ -7,19 +7,21 @@ import { secretStatus } from "@/lib/admin/secretStatus";
 
 export const dynamic = "force-dynamic";
 
-const GROUPS: ["instagram" | "tiktok" | "billing", string, string][] = [
-  ["instagram", "📸 جلسة انستقرام", "كوكيز حساب انستقرام (للستوري والقوائم). القيم تنحفظ مشفّرة ولا تنعرض أبداً."],
-  ["tiktok", "🎵 تيك توك", "كوكيز الجلسة + مفاتيح تطبيق المطورين."],
+/** Session cookies moved to the "الجلسات" page (multiple sessions with rotation). */
+const SESSION_KEYS = new Set(["igSessionId", "igCsrfToken", "igDsUserId", "igMid", "igDatr", "tiktokCookie", "tiktokSessionId"]);
+
+const GROUPS: ["tiktok" | "billing", string, string][] = [
+  ["tiktok", "🎵 تيك توك — مفاتيح المطورين", "مفاتيح TikTok Research API (اختياري). جلسات تيك توك وانستقرام صارت في صفحة «الجلسات»."],
   ["billing", "💳 الدفع (Stripe)", "اتركها فاضية لوضع الدفع التجريبي."],
 ];
 
 export default async function KeysPage({ searchParams }: { searchParams: Flashy }) {
   const { base } = await guardPage();
   return (
-    <PanelShell active="keys" title="الجلسات والمفاتيح" flash={searchParams}>
+    <PanelShell active="keys" title="المفاتيح" flash={searchParams}>
       {GROUPS.map(([g, title, desc]) => (
         <FormSection key={g} title={title} desc={desc} action={`${base}/api/secrets?page=keys`}>
-          {secretStatus(g).map((x) => (
+          {secretStatus(g).filter((x) => !SESSION_KEYS.has(x.def.key)).map((x) => (
             <SecretField key={x.def.key} {...x} />
           ))}
           <Submit />

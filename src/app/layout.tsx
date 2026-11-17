@@ -17,6 +17,8 @@ import { getSettings } from "@/lib/site/store";
 import { siteMetadata } from "@/lib/site/metadata";
 import { accentCss } from "@/lib/site/themeCss";
 import { publicSite } from "@/lib/site/publicFlags";
+import { HeadExtras } from "@/components/site/HeadExtras";
+import { Maintenance } from "@/components/site/Maintenance";
 
 const latin = Inter({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 const arabic = IBM_Plex_Sans_Arabic({ subsets: ["arabic"], weight: ["400", "500", "600", "700"], variable: "--font-ar", display: "swap" });
@@ -48,11 +50,14 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeBoot(s.theme.defaultTheme) }} />
         {accent && <style dangerouslySetInnerHTML={{ __html: accent }} />}
+        {!isPanel && <HeadExtras head={s.head} />}
       </head>
       <body className="font-sans">
         <I18nProvider locale={locale} t={t} site={publicSite(s)}>
           {isPanel ? (
             <main className="min-h-screen">{children}</main>
+          ) : s.maintenance?.enabled ? (
+            <Maintenance message={s.maintenance.message} locale={locale} />
           ) : (
             <>
               <JsonLd data={[jsonLdWebsite(), jsonLdOrganization()]} />

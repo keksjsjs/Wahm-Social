@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: Request) {
   try {
-    burstGuard(req, "stream", 120);
+    burstGuard(req, "stream");
     const sp = new URL(req.url).searchParams;
     const platform = sp.get("platform") ?? "";
     const ref = sp.get("ref") ?? "";

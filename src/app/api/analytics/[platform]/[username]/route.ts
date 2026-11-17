@@ -4,11 +4,13 @@ import { burstGuard, parsePlatform, parseUsername } from "@/lib/server/guard";
 import { handler, ok } from "@/lib/server/respond";
 import { userFromRequest } from "@/lib/server/auth";
 import { hasFeature } from "@/lib/plans";
+import { requireFeatureOn } from "@/lib/site/flags";
 
 export const dynamic = "force-dynamic";
 
 export const GET = handler(async (req: Request, { params }: { params: { platform: string; username: string } }) => {
   burstGuard(req);
+  requireFeatureOn("analytics");
   const platform = parsePlatform(params.platform);
   const username = parseUsername(params.username);
   const [profile, posts] = await Promise.all([getProfile(platform, username), getPosts(platform, username, 30)]);

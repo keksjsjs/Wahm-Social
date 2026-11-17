@@ -2,6 +2,7 @@ import type { SiteSettings } from "../site/types";
 import { isHexColor } from "../site/themeCss";
 import { validateRelayUrl } from "../server/relay";
 import { bi, bool, lines, num, str } from "./formRead";
+import { EXTRA_PARSERS } from "./sections-extra";
 
 /** Form → settings mutators, one per panel section. */
 export const SECTION_PARSERS: Record<string, (s: SiteSettings, f: FormData) => SiteSettings> = {
@@ -41,7 +42,7 @@ export const SECTION_PARSERS: Record<string, (s: SiteSettings, f: FormData) => S
   },
   features(s, f) {
     const x = s.features;
-    for (const k of ["tiktok", "instagram", "followers", "stories", "downloads", "pro"] as const) x[k] = bool(f, k, x[k]);
+    for (const k of ["tiktok", "instagram", "followers", "following", "stories", "downloads", "region", "posts", "search", "analytics", "pro"] as const) x[k] = bool(f, k, x[k]);
     if (!x.tiktok && !x.instagram) x.tiktok = true;
     const dm = str(f, "demoMode", 10);
     x.demoMode = dm === "auto" || dm === "on" || dm === "off" ? dm : "";
@@ -78,4 +79,19 @@ export const SECTION_PARSERS: Record<string, (s: SiteSettings, f: FormData) => S
   },
 };
 
-export const SECTION_PAGE: Record<string, string> = { texts: "texts", banner: "texts", seo: "seo", features: "features", theme: "theme", relay: "proxy" };
+Object.assign(SECTION_PARSERS, EXTRA_PARSERS);
+
+export const SECTION_PAGE: Record<string, string> = {
+  texts: "texts",
+  banner: "texts",
+  seo: "seo",
+  features: "features",
+  theme: "theme",
+  relay: "proxy",
+  limits: "limits",
+  maintenance: "site",
+  head: "site",
+  contact: "site",
+  pages: "content",
+  blog: "content",
+};

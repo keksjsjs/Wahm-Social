@@ -2,15 +2,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getDict } from "@/lib/i18n/server";
-import { ARTICLES, articleBySlug } from "@/lib/content/blog";
+import { visibleArticle as articleBySlug, visibleArticles } from "@/lib/content/visible";
 import { absUrl, buildMetadata, jsonLdBreadcrumbs } from "@/lib/seo";
 import { Markdown } from "@/components/content/Markdown";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { SearchBox } from "@/components/search/SearchBox";
 
-export function generateStaticParams() {
-  return ARTICLES.map((a) => ({ slug: a.slug }));
-}
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
   const a = articleBySlug(params.slug);
@@ -22,7 +19,7 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
   const a = articleBySlug(params.slug);
   if (!a) notFound();
   const { locale, t } = getDict();
-  const related = ARTICLES.filter((x) => x.slug !== a.slug && x.tags.some((tg) => a.tags.includes(tg))).slice(0, 3);
+  const related = visibleArticles().filter((x) => x.slug !== a.slug && x.tags.some((tg) => a.tags.includes(tg))).slice(0, 3);
   return (
     <article className="container-w max-w-3xl py-14">
       <JsonLd

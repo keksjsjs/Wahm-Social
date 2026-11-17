@@ -2,7 +2,7 @@
 import { isPlatform, PlatformError, type Platform } from "../platforms/types";
 import { isValidUsername, normalizeUsername } from "../format";
 import { clientIp, enforceRateLimit } from "./rateLimit";
-import { platformEnabled } from "../site/flags";
+import { limit, platformEnabled, requireNotMaintenance } from "../site/flags";
 
 export function parsePlatform(v: string): Platform {
   if (!isPlatform(v) || !platformEnabled(v)) throw new PlatformError("invalid_input", "Unknown platform", 400);
@@ -15,9 +15,17 @@ export function parseUsername(v: string): string {
   return u;
 }
 
-/** Burst protection: 40 req/min per IP across the API. */
-export function burstGuard(req: Request, scope = "api", limit = 40) {
+/** Per-scope default req/min (admin-configurable). Auth scopes pass an explicit limit. */
+function scopeLimit(scope: string): number {
+  if (scope === "dl") return limit("downloadPerMin", 1, 10_000);
+  if (scope === "stream") return limit("streamPerMin", 1, 10_000);
+  return limit("apiPerMin", 1, 10_000);
+}
+
+/** Burst protection per IP; also returns 503 while maintenance mode is on (except auth). */
+export function burstGuard(req: Request, scope = "api", max?: number) {
+  if (scope !== "auth") requireNotMaintenance();
   const ip = clientIp(req);
-  enforceRateLimit(`${scope}:${ip}`, limit, 60_000);
+  enforceRateLimit(`${scope}:${ip}`, max ?? scopeLimit(scope), 60_000);
   return ip;
 }
