@@ -54,7 +54,9 @@ export interface RelayTry {
 }
 
 let lastTry: RelayTry | null = null;
+const recent: RelayTry[] = [];
 export const relayTry = () => lastTry;
+export const relayTries = () => recent.slice();
 
 export function recordRelayTry(target: string, status?: number, ok?: boolean) {
   let host = "unknown";
@@ -64,4 +66,6 @@ export function recordRelayTry(target: string, status?: number, ok?: boolean) {
     /* ignore */
   }
   lastTry = { at: new Date().toISOString(), host, status, ok };
+  recent.unshift(lastTry);
+  if (recent.length > 5) recent.pop();
 }

@@ -37,7 +37,7 @@ export async function runProxyTest(candidate?: string): Promise<string> {
       // tiktok.com is an HTML page (only a challenge/WAF page counts as blocked); tikwm/countik must return JSON.
       const blocked =
         label === "tiktok.com"
-          ? looksLikeBotWall(text) || /_wafchallengeid|tiktok-verify-page|captcha/i.test(text.slice(0, 20000)) || res.status === 403
+          ? looksLikeBotWall(text) || /_wafchallengeid|tiktok-verify-page/i.test(text.slice(0, 20000)) || res.status === 403
           : label === "tikwm.com"
             ? thirdPartyBlocked(res.status, text, res.headers) || res.status === 403
             : res.status === 403 || looksLikeBotWall(text);
@@ -85,7 +85,7 @@ export async function runRelayTest(candidate?: string): Promise<string> {
 
   const tiktok = await ping("tiktok.com profile", RELAY_TIKTOK, (status, text) => {
     const hasData = /__UNIVERSAL_DATA_FOR_REHYDRATION__/.test(text);
-    const blocked = looksLikeBotWall(text) || /_wafchallengeid|tiktok-verify-page|captcha/i.test(text.slice(0, 20000));
+    const blocked = looksLikeBotWall(text) || /_wafchallengeid|tiktok-verify-page/i.test(text.slice(0, 20000));
     if (status >= 200 && status < 400 && hasData && !blocked) return "✅ يشتغل (بيانات الحساب وصلت)";
     if (blocked) return "⛔ محجوب (صفحة تحقق)";
     return "⚠️ رد بدون بيانات الحساب";

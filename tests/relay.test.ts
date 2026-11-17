@@ -44,3 +44,12 @@ test("shouldRelay is off when RELAY_URL is empty", () => {
     else process.env.RELAY_URL = prev;
   }
 });
+
+import { looksLikeBotWall } from "../src/lib/server/http";
+
+test("looksLikeBotWall does not flag a real TikTok page that mentions a captcha API domain", () => {
+  const real = `<!doctype html><html><head><script id="api-domains" type="application/json">{"kind":"m","captcha":"","imApi":"https://im-api.tiktok.com"}</script></head><body><script id="__UNIVERSAL_DATA_FOR_REHYDRATION__">{}</script></body></html>`;
+  assert.equal(looksLikeBotWall(real), false);
+  const wall = `<!DOCTYPE html><html><head><title>Just a moment...</title></head><body>challenge-platform</body></html>`;
+  assert.equal(looksLikeBotWall(wall), true);
+});

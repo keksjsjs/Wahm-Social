@@ -93,7 +93,11 @@ export function cookiesFrom(headers: Headers): string {
 }
 
 export function looksLikeBotWall(html: string): boolean {
-  return /Just a moment\.\.\.|captcha|challenge-platform|Please wait\.\.\./i.test(html.slice(0, 4000));
+  // Real TikTok SSR pages mention a "captcha" API domain in the first 4KB
+  // (`{"kind":"m","captcha":""}`) and also embed this script. Never treat those as a wall.
+  if (/__UNIVERSAL_DATA_FOR_REHYDRATION__/.test(html)) return false;
+  const head = html.slice(0, 4000);
+  return /Just a moment\.\.\.|challenge-platform|Please wait\.\.\.|tiktok-verify-page|_wafchallengeid/i.test(head);
 }
 
 let proxyFetch: { url: string; fn: typeof fetch } | null = null;

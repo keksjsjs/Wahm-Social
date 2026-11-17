@@ -8,7 +8,7 @@ import { lastBrowserListTry } from "@/lib/platforms/tiktok/followers/browser";
 import { regionTry } from "@/lib/platforms/tiktok/region";
 import { tikwmTry } from "@/lib/platforms/tiktok/tikwm";
 import { countikTry } from "@/lib/platforms/tiktok/countik";
-import { relayTry } from "@/lib/server/relay";
+import { relayTry, relayTries } from "@/lib/server/relay";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,7 @@ export function GET(req: NextRequest) {
           scraperProxy: Boolean(env.scraperProxy),
           relayUrl: Boolean(env.relayUrl),
           relayLastTry: relayTry(),
+          relayRecentTries: relayTries(),
           tiktokSession: Boolean(env.tiktokSessionId),
           tiktokCookie: Boolean(env.tiktokCookie),
           tiktokSessionFlags: sessionConfigured(),

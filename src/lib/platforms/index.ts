@@ -44,7 +44,7 @@ async function withFallback<T>(key: string, ttl: number, live: () => Promise<T>,
 }
 
 export function getProfile(platform: Platform, username: string): Promise<Sourced<Profile>> {
-  return withFallback(`profile:${platform}:${username}:v2`, TTL.profile, () => adapters[platform].getProfile(username), () => demoProfile(platform, username));
+  return withFallback(`profile:${platform}:${username}:v3`, TTL.profile, () => adapters[platform].getProfile(username), () => demoProfile(platform, username));
 }
 
 const IG_POSTS_NOTICE =
