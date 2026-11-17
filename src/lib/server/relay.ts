@@ -7,8 +7,39 @@
  */
 export const RELAY_HOSTS = new Set(["www.tikwm.com", "tikwm.com", "www.tiktok.com", "countik.com"]);
 
+/** RELAY_URL may hold several Worker URLs (comma / whitespace separated) — failover order. */
+export function relayList(raw = process.env.RELAY_URL ?? ""): string[] {
+  return raw
+    .split(/[\s,]+/)
+    .map((x) => x.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
+const rg = globalThis as unknown as { __frostlyRelayIdx?: number; __frostlyRelayKey?: string };
+export function activeRelayIndex(): number {
+  const list = relayList();
+  const key = list.join(",");
+  if (rg.__frostlyRelayKey !== key) {
+    rg.__frostlyRelayKey = key;
+    rg.__frostlyRelayIdx = 0;
+  }
+  return list.length ? (rg.__frostlyRelayIdx ?? 0) % list.length : 0;
+}
+
+/** Move to the next Worker; false when there is no other one. */
+export function failoverRelay(): boolean {
+  const list = relayList();
+  if (list.length < 2) return false;
+  rg.__frostlyRelayIdx = (activeRelayIndex() + 1) % list.length;
+  console.warn(`[relay] failover -> #${rg.__frostlyRelayIdx}`);
+  return true;
+}
+
+/** Active Worker base URL (or the first of an explicit candidate list). */
 export function readRelayUrl(raw?: string): string {
-  return (raw ?? process.env.RELAY_URL ?? "").trim().replace(/\/+$/, "");
+  if (raw !== undefined) return relayList(raw)[0] ?? "";
+  const list = relayList();
+  return list.length ? list[activeRelayIndex()] : "";
 }
 
 export function validateRelayUrl(v: string): string | null {

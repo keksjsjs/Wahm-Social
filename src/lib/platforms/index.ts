@@ -14,6 +14,7 @@ import { browserList } from "./tiktok/followers/browser";
 import { tikwmStoriesNote } from "./tiktok/tikwm";
 import { connectionsFor } from "./connections";
 import { lockedResult } from "./connections/visibility";
+import { followersShow } from "./connections/show";
 import { PlatformError, type ConnectionsResult, type DataSource, type Platform, type PlatformAdapter, type Post, type Profile, type Story } from "./types";
 
 export * from "./types";
@@ -30,13 +31,17 @@ export interface Sourced<T> {
 const DEMO_NOTICE =
   "المنصة تحجب الطلبات من السيرفر حالياً — نعرض بيانات تجريبية. Platform is blocking server requests right now; showing demo data.";
 
-async function withFallback<T>(key: string, ttl: number, live: () => Promise<T>, demo: () => T): Promise<Sourced<T>> {
+/**
+ * Instagram never silently swaps in demo data when it blocks us (only DEMO_MODE=on shows demo):
+ * visitors get an honest "Instagram is blocking the server right now" message instead.
+ */
+async function withFallback<T>(key: string, ttl: number, live: () => Promise<T>, demo: () => T, autoDemo = true): Promise<Sourced<T>> {
   if (env.demoMode === "on") return { data: demo(), source: "demo", notice: DEMO_NOTICE };
   try {
     const [data, fromCache] = await cached(key, ttl, live);
     return { data, source: fromCache ? "cache" : "live" };
   } catch (e) {
-    if (env.demoMode === "auto" && e instanceof PlatformError && (e.code === "blocked" || e.code === "upstream_error")) {
+    if (autoDemo && env.demoMode === "auto" && e instanceof PlatformError && (e.code === "blocked" || e.code === "upstream_error")) {
       return { data: demo(), source: "demo", notice: DEMO_NOTICE };
     }
     throw e;
@@ -44,13 +49,20 @@ async function withFallback<T>(key: string, ttl: number, live: () => Promise<T>,
 }
 
 export function getProfile(platform: Platform, username: string): Promise<Sourced<Profile>> {
-  return withFallback(`profile:${platform}:${username}:v3`, TTL.profile, () => adapters[platform].getProfile(username), () => demoProfile(platform, username));
+  return withFallback(
+    `profile:${platform}:${username}:v3`,
+    TTL.profile,
+    () => adapters[platform].getProfile(username),
+    () => demoProfile(platform, username),
+    platform !== "instagram",
+  );
 }
 
 const IG_POSTS_NOTICE =
   "انستقرام يحد عرض المنشورات من السيرفر حالياً — نعرض معلومات الحساب العامة فقط. الصق رابط أي منشور في مركز التحميل لتحميله. Instagram is limiting post listings from our server; showing the public profile only — paste a post link in the Download center to save it.";
 
 export async function getPosts(platform: Platform, username: string, limit = 12): Promise<Sourced<Post[]>> {
+  if (!featureOn("posts")) return { data: [], source: "live", notice: DISABLED_MSG.posts };
   if (platform === "instagram" && env.demoMode !== "on") {
     try {
       const [data, fromCache] = await cached(`posts:${platform}:${username}:${limit}`, TTL.posts, () => adapters.instagram.getPosts(username, { limit }));
@@ -59,7 +71,7 @@ export async function getPosts(platform: Platform, username: string, limit = 12)
       if (!(e instanceof PlatformError) || (e.code !== "blocked" && e.code !== "upstream_error")) throw e;
       const prof = await getProfile(platform, username).catch(() => null);
       if (prof && prof.source !== "demo") return { data: [], source: "live", notice: IG_POSTS_NOTICE };
-      return { data: demoPosts(platform, username, limit), source: "demo", notice: DEMO_NOTICE };
+      throw e;
     }
   }
   return withFallback(
@@ -77,6 +89,9 @@ export async function getPost(platform: Platform, ref: string, username?: string
   const [data, fromCache] = await cached(`post:${platform}:${ref}`, TTL.post, () => adapters[platform].getPost(ref, username));
   return { data, source: fromCache ? "cache" : "live" };
 }
+
+const IG_STORIES_NOTICE =
+  "انستقرام رفض طلب الستوري من السيرفر الحين (حظر/حد طلبات على البروكسي أو الجلسة تحتاج تسجيل دخول جديد). ما نعرض بيانات وهمية — جرّب بعد شوي. Instagram refused the story request from our server (proxy rate-limited or the session needs re-login). No fake data is shown — try again shortly.";
 
 const TIKWM_BLOCKED_NOTICE =
   "مصدر الستوري الاحتياطي (tikwm) محجوب من عنوان السيرفر حالياً. أضف مسار Worker في RELAY_URL أو بروكسي سكني في SCRAPER_PROXY ثم أعد المحاولة. The tikwm stories fallback is blocked from this server IP — set RELAY_URL or a residential proxy in SCRAPER_PROXY and try again.";
@@ -106,12 +121,23 @@ export async function getStories(platform: Platform, username: string): Promise<
       throw e;
     }
   }
+  if (platform === "instagram" && env.demoMode !== "on") {
+    try {
+      const [data, fromCache] = await cached(`stories:${platform}:${username}`, TTL.stories, () => adapters.instagram.getStories(username));
+      return { data, source: fromCache ? "cache" : "live" };
+    } catch (e) {
+      if (e instanceof PlatformError && (e.code === "blocked" || e.code === "upstream_error")) {
+        return { data: [], source: "live", notice: IG_STORIES_NOTICE };
+      }
+      throw e;
+    }
+  }
   return withFallback(`stories:${platform}:${username}`, TTL.stories, () => adapters[platform].getStories(username), () => demoStories(platform, username));
 }
 
 /** Followers/following honouring each account's own privacy (see connections/index.ts). */
 export async function getConnections(platform: Platform, username: string, kind: "followers" | "following", cursor?: string): Promise<Sourced<ConnectionsResult>> {
-  requireFeatureOn("followers");
+  requireFeatureOn(kind);
   const p = await getProfile(platform, username);
   if (p.source === "demo") {
     // Profile scrape blocked — but a logged-in TikTok browser session can still open the public list.
@@ -124,7 +150,7 @@ export async function getConnections(platform: Platform, username: string, kind:
               available: true,
               visibility: "public",
               total: kind === "followers" ? p.data.followers : p.data.following,
-              items: br.items.slice(0, 5),
+              items: br.items.slice(0, followersShow()),
               provider: "tiktok-session",
               platformUrl: p.data.profileUrl,
               attempts: [

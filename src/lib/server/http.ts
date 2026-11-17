@@ -3,7 +3,8 @@
  * realistic browser headers and structured errors.
  */
 import { PlatformError } from "../platforms/types";
-import { recordRelayTry, rewriteViaRelay, shouldRelay } from "./relay";
+import { failoverRelay, recordRelayTry, relayList, rewriteViaRelay, shouldRelay } from "./relay";
+import { logError } from "./errorLog";
 
 export const DESKTOP_UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
@@ -18,6 +19,8 @@ export interface FetchOptions {
   body?: string;
   /** Route through SCRAPER_PROXY when it is configured (Instagram blocks shared datacenter IPs). */
   proxy?: boolean;
+  /** With `proxy`: these HTTP statuses switch to the next proxy and retry (e.g. [429]). */
+  failoverOn?: number[];
 }
 
 export interface FetchResult {
@@ -31,17 +34,22 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export async function httpGet(url: string, opts: FetchOptions = {}): Promise<FetchResult> {
   const { timeoutMs = 12000 } = opts;
-  // One extra attempt per spare proxy so a dead proxy in SCRAPER_PROXY fails over.
+  // One extra attempt per spare proxy / spare Worker so a dead one fails over within the same call.
   const spare = opts.proxy ? Math.max(0, proxyList().length - 1) : 0;
-  const retries = (opts.retries ?? 1) + spare;
+  const relaySpare = shouldRelay(url, opts) ? relayList().length : 0;
+  const retries = (opts.retries ?? 1) + spare + relaySpare;
   let lastErr: unknown;
+  // Once every Worker failed for this call, go direct (or through the proxy).
+  let relayOff = false;
+  let statusFailovers = 0;
   for (let attempt = 0; attempt <= retries; attempt++) {
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), timeoutMs);
+    const useRelay = !relayOff && shouldRelay(url, opts);
+    let doFetch: typeof fetch | null = null;
     try {
-      const useRelay = shouldRelay(url, opts);
       const fetchUrl = useRelay ? rewriteViaRelay(url) : url;
-      const doFetch = useRelay ? null : opts.proxy ? await proxiedFetch() : null;
+      doFetch = useRelay ? null : opts.proxy ? await proxiedFetch() : null;
       const res = await (doFetch ?? fetch)(fetchUrl, {
         method: opts.method ?? "GET",
         body: opts.body,
@@ -56,7 +64,20 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
         cache: "no-store",
       } as RequestInit);
       if (doFetch && res.status === 407 && attempt < retries && failoverProxy()) continue;
+      // Caller-chosen statuses (e.g. Instagram 429) → try the next proxy in the list.
+      if (doFetch && opts.failoverOn?.includes(res.status) && statusFailovers < spare && attempt < retries && failoverProxy()) {
+        statusFailovers++;
+        await res.body?.cancel().catch(() => undefined);
+        logError("proxy", `HTTP ${res.status} from ${hostOf(url)} via proxy — switched to the next proxy`);
+        continue;
+      }
       const text = await res.text();
+      if (useRelay && res.status >= 500 && attempt < retries) {
+        recordRelayTry(url, res.status, false);
+        logError("relay", `Worker returned HTTP ${res.status} for ${hostOf(url)}`);
+        if (!failoverRelay()) relayOff = true;
+        continue;
+      }
       if (res.status >= 500 && attempt < retries) {
         await sleep(400 * (attempt + 1));
         continue;
@@ -66,7 +87,15 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
       return { status: res.status, text, headers: res.headers, url: useRelay ? url : res.url };
     } catch (e) {
       lastErr = e;
-      if (opts.proxy && !shouldRelay(url, opts) && (e as Error)?.name !== "AbortError") failoverProxy();
+      const aborted = (e as Error)?.name === "AbortError";
+      if (useRelay) {
+        recordRelayTry(url, undefined, false);
+        logError("relay", `Worker request failed for ${hostOf(url)}: ${aborted ? "timeout" : String((e as Error)?.message ?? e)}`);
+        if (!failoverRelay()) relayOff = true;
+      } else if (doFetch && !aborted) {
+        logError("proxy", `Proxy connection failed for ${hostOf(url)}: ${String((e as Error)?.message ?? e)}`);
+        failoverProxy();
+      }
       if (attempt < retries) await sleep(400 * (attempt + 1));
     } finally {
       clearTimeout(t);
@@ -74,6 +103,14 @@ export async function httpGet(url: string, opts: FetchOptions = {}): Promise<Fet
   }
   throw new PlatformError("upstream_error", `Upstream request failed: ${String((lastErr as Error)?.message ?? lastErr)}`, 502);
 }
+
+const hostOf = (u: string) => {
+  try {
+    return new URL(u).hostname;
+  } catch {
+    return "?";
+  }
+};
 
 /** Extract a JSON payload embedded in a <script id="..."> tag. */
 export function extractScriptJson<T = unknown>(html: string, id: string): T | null {

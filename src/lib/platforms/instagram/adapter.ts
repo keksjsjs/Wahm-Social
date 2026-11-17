@@ -112,6 +112,7 @@ async function oembedPost(shortcode: string): Promise<Post | null> {
     const res = await httpGet(`https://www.instagram.com/api/v1/oembed/?url=${encodeURIComponent(`https://www.instagram.com/p/${shortcode}/`)}`, {
       retries: 0,
       proxy: true,
+      failoverOn: [429],
       headers: { accept: "application/json" },
     });
     if (res.status !== 200 || !res.text.startsWith("{")) return null;
@@ -211,7 +212,11 @@ export const instagram: PlatformAdapter = {
     const stale = lastGood.get(username.toLowerCase());
     if (p !== "missing" && stale && Date.now() - stale.at < 24 * 3600_000) return stale.profile;
     if (p === "missing" || "missing" in r) throw new PlatformError("not_found", `@${username} was not found on Instagram`, 404);
-    throw new PlatformError("blocked", "Instagram is temporarily refusing lookups from this server. Please try again in a minute.", 503);
+    throw new PlatformError(
+      "blocked",
+      "انستقرام يرفض الطلبات من السيرفر والبروكسي حالياً (حد طلبات 429). ما نعرض بيانات وهمية — جرّب بعد دقائق. Instagram is refusing requests from our server and proxies right now (HTTP 429). No fake data is shown — please try again in a few minutes.",
+      503,
+    );
   },
 
   async getPosts(username, opts): Promise<Post[]> {
@@ -235,7 +240,7 @@ export const instagram: PlatformAdapter = {
     const { shortcode } = parseInstagramRef(idOrUrl);
     if (!shortcode) throw new PlatformError("invalid_input", "Paste a valid Instagram post or reel link", 400);
     try {
-      const res = await httpGet(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, { retries: 0, proxy: true });
+      const res = await httpGet(`https://www.instagram.com/p/${shortcode}/embed/captioned/`, { retries: 0, proxy: true, failoverOn: [429] });
       if (res.status === 404) throw new PlatformError("not_found", "Post not found or not public", 404);
       const post = parseEmbedHtml(res.text, shortcode);
       if (post) return post;

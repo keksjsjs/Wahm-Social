@@ -18,6 +18,7 @@ export async function fetchPreview(path: string, attempt = 0): Promise<string> {
     headers: { "user-agent": PREVIEW_UAS[attempt % PREVIEW_UAS.length], accept: "text/html" },
     retries: 0,
     proxy: true,
+    failoverOn: [429],
     timeoutMs: 10000,
   });
   if (res.status === 404) throw new PlatformError("not_found", "Not found on Instagram", 404);

@@ -5,6 +5,7 @@ import "server-only";
  * Cloudflare/HTML challenges are `tikwm_blocked`; daily free-tier limits are `tikwm_quota`.
  */
 import { httpGet } from "../../server/http";
+import { logError } from "../../server/errorLog";
 import type { Post, Profile, Story } from "../types";
 import { parseJsonBody, thirdPartyBlocked } from "./fallback-http";
 import { mediaFromTikwm, postFromTikwm, profileFromTikwm, storiesFromTikwm, unwrapTikwm, type TikwmVideoMedia } from "./tikwm-parse";
@@ -25,6 +26,7 @@ export const tikwmStoriesNote = () => lastStoriesNote;
 
 function record(endpoint: string, note: TikwmNote, status?: number) {
   lastTry = { at: new Date().toISOString(), endpoint, note, status };
+  if (note === "tikwm_blocked" || note === "tikwm_quota" || note === "tikwm_error") logError("tikwm", `${endpoint}: ${note}${status ? ` (HTTP ${status})` : ""}`);
 }
 
 const BASE = "https://www.tikwm.com";

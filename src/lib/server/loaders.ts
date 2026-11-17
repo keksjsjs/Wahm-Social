@@ -9,6 +9,7 @@ import { getPosts, getProfile, getStories, type Sourced } from "../platforms";
 import { isPlatform, PlatformError, type Platform, type Post, type Profile, type Story } from "../platforms/types";
 import { isValidUsername, normalizeUsername } from "../format";
 import { Searches } from "./db";
+import { logError } from "./errorLog";
 
 export type Loaded<T> = { ok: true; value: Sourced<T> } | { ok: false; code: PlatformError["code"]; message: string };
 
@@ -18,6 +19,7 @@ async function wrap<T>(fn: () => Promise<Sourced<T>>): Promise<Loaded<T>> {
   } catch (e) {
     if (e instanceof PlatformError) return { ok: false, code: e.code, message: e.message };
     console.error("[loader]", e);
+    logError("loader", String((e as Error)?.message ?? e));
     return { ok: false, code: "internal", message: "Unexpected error" };
   }
 }
