@@ -12,6 +12,9 @@ import { httpGet } from "../../server/http";
 import { cookieValue, hasTikTokSession, tiktokWebHeaders } from "./session";
 import { accountLocation } from "./location";
 import { rememberedRegion } from "./followers/web";
+import { voteCountry } from "./location-summary";
+import { cache } from "../../server/cache";
+import { siteNow } from "../../site/snapshot";
 
 function asCountry(v: unknown): string | undefined {
   return typeof v === "string" && /^[A-Za-z]{2}$/.test(v) ? v.toUpperCase() : undefined;
@@ -85,14 +88,28 @@ async function detailRegion(username: string, secUid?: string): Promise<string |
   }
 }
 
-export async function resolveLocation(profile: Profile): Promise<ProfileLocation | undefined> {
+const LOC_HIT_TTL = () => Math.max(5, siteNow().limits?.regionCacheMin ?? 360) * 60_000;
+const LOC_MISS_TTL = 20 * 60_000;
+
+export async function resolveLocation(profile: Profile, itemIds: string[] = []): Promise<ProfileLocation | undefined> {
+  const key = `tt-loc:${profile.username.toLowerCase()}`;
+  const hit = cache.get<ProfileLocation | null>(key);
+  if (hit !== undefined) return hit ?? (profile.language ? { recent: [], sample: 0, language: profile.language } : undefined);
+  const loc = await computeLocation(profile, itemIds);
+  cache.set(key, loc?.current ? loc : null, loc?.current ? LOC_HIT_TTL() : LOC_MISS_TTL);
+  return loc;
+}
+
+async function computeLocation(profile: Profile, itemIds: string[]): Promise<ProfileLocation | undefined> {
   // Run region enrichment and video sampling together so video country isn't lost to timeouts.
-  const videoPromise = profile.isPrivate
-    ? Promise.resolve(undefined)
-    : Promise.race([
-        accountLocation(profile.username, profile.language).catch(() => undefined),
-        new Promise<undefined>((r) => setTimeout(() => r(undefined), 10000)),
-      ]);
+  const hasPosts = (profile.postsCount ?? 0) > 0 || itemIds.length > 0;
+  const videoPromise =
+    profile.isPrivate || !hasPosts
+      ? Promise.resolve(undefined)
+      : Promise.race([
+          accountLocation(profile.username, profile.language, 12, itemIds).catch(() => undefined),
+          new Promise<undefined>((r) => setTimeout(() => r(undefined), 18000)),
+        ]);
 
   const regionPromise = (async () => {
     let region = profile.region ?? rememberedRegion(profile.username);
@@ -105,51 +122,70 @@ export async function resolveLocation(profile: Profile): Promise<ProfileLocation
     return region;
   })();
 
-  let [region, fromVideos] = await Promise.all([regionPromise, videoPromise]);
+  const [profileRegion, fromVideos] = await Promise.all([regionPromise, videoPromise]);
+  let region = profileRegion;
   let regionSource: "profile" | "video" | undefined = region ? "profile" : undefined;
+  let via: "tiktok" | "tikwm" | undefined;
+  let sample = fromVideos?.sample ?? 0;
+  let recent = fromVideos?.recent ?? [];
 
-  // Last resort: country from a real video via countik id + tikwm region.
+  if (!region && fromVideos?.current) {
+    region = fromVideos.current;
+    regionSource = "video";
+    via = "tiktok";
+  }
+
+  // Last resort: tikwm per-video region (ids from countik + the embed). Majority vote.
   // Never invent a country for accounts with zero posts.
-  if (!region && !fromVideos?.current && (profile.postsCount ?? 0) > 0) {
-    region = await fallbackVideoRegion(profile).catch(() => undefined);
-    if (region) regionSource = "video";
+  if (!region && !profile.isPrivate && hasPosts) {
+    const fb = await fallbackVideoRegion(profile, itemIds).catch(() => undefined);
+    if (fb?.code) {
+      region = fb.code;
+      regionSource = "video";
+      via = "tikwm";
+      sample = fb.total;
+      recent = fb.recent;
+    }
   }
 
   if (region) {
     return {
       current: region,
       source: regionSource ?? "profile",
+      ...(via ? { via } : {}),
       place: fromVideos?.place,
-      recent: fromVideos?.recent?.filter((x) => x.code !== region) ?? [],
-      sample: fromVideos?.sample ?? 0,
+      recent: regionSource === "profile" ? recent.filter((x) => x.code !== region) : recent,
+      sample,
       language: profile.language ?? fromVideos?.language,
     };
   }
-  if (fromVideos?.current || fromVideos?.place || fromVideos?.language) {
-    return { ...fromVideos, source: fromVideos.current ? "video" : undefined };
-  }
+  if (fromVideos?.place || fromVideos?.language) return { ...fromVideos, source: undefined };
   if (profile.language) return { recent: [], sample: 0, language: profile.language };
   return undefined;
 }
 
-async function fallbackVideoRegion(profile: Profile): Promise<string | undefined> {
-  if (!profile.secUid && !profile.username) return undefined;
+async function fallbackVideoRegion(
+  profile: Profile,
+  itemIds: string[],
+): Promise<{ code?: string; total: number; recent: { code: string; count: number }[] } | undefined> {
   const { countikVideoIds } = await import("./countik");
   const { tikwmVideo } = await import("./tikwm");
-  const ids = profile.secUid ? await countikVideoIds(profile.secUid).catch(() => [] as string[]) : [];
-  const id = ids[0];
-  if (!id) return undefined;
-  const vid = await Promise.race([
-    tikwmVideo(`https://www.tiktok.com/@${profile.username}/video/${id}`),
-    new Promise<null>((r) => setTimeout(() => r(null), 8000)),
-  ]).catch(() => null);
-  if (!vid || !vid.ok) return undefined;
-  const found = asCountry(vid.data.region);
-  lastRegionTry = {
-    at: new Date().toISOString(),
-    step: "tikwm_video",
-    found: !!found,
-    keys: found ? ["region"] : ["no_region"],
-  };
-  return found;
+  const fromCountik = profile.secUid ? await countikVideoIds(profile.secUid).catch(() => [] as string[]) : [];
+  const ids = [...new Set([...itemIds, ...fromCountik])].filter((x) => /^\d{18,21}$/.test(x)).slice(0, 3);
+  if (!ids.length) return undefined;
+  const codes = await Promise.all(
+    ids.map((id) =>
+      Promise.race([
+        tikwmVideo(`https://www.tiktok.com/@${profile.username}/video/${id}`),
+        new Promise<null>((r) => setTimeout(() => r(null), 9000)),
+      ])
+        .then((v) => (v && v.ok ? asCountry(v.data.region) : undefined))
+        .catch(() => undefined),
+    ),
+  );
+  const vote = voteCountry(codes);
+  const counts = new Map<string, number>();
+  codes.forEach((c) => c && counts.set(c, (counts.get(c) ?? 0) + 1));
+  lastRegionTry = { at: new Date().toISOString(), step: "tikwm_video", found: !!vote.code, keys: vote.code ? ["region"] : ["no_region"] };
+  return { code: vote.code, total: vote.total, recent: [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([code, count]) => ({ code, count })) };
 }

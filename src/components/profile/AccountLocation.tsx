@@ -30,8 +30,8 @@ export function AccountLocation({ loc, locale }: { loc: ProfileLocation; locale:
         : "* from the account's own region field (works with zero posts)"
       : loc.source === "video" && loc.current
         ? ar
-          ? `* مستنتجة من آخر ${loc.sample} فيديو عام (مكان النشر)`
-          : `* based on where the latest ${loc.sample} public video(s) were posted`
+          ? `* مستنتجة من مكان نشر ${loc.sample} فيديو عام حديث (الأغلبية)${loc.via === "tikwm" ? " — عبر tikwm" : " — من صفحات تيك توك"}`
+          : `* majority of where ${loc.sample} recent public video(s) were posted${loc.via === "tikwm" ? " (via tikwm)" : " (TikTok video pages)"}`
         : null;
   return (
     <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">

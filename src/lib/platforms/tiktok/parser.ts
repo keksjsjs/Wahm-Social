@@ -155,7 +155,9 @@ export function parseItemStruct(it: Any): Post {
 }
 
 export function parseVideoDetail(json: Any): { status: number; post?: Post } {
-  const vd = json?.__DEFAULT_SCOPE__?.["webapp.video-detail"];
+  // Desktop pages use "webapp.video-detail"; mobile-UA (e.g. the relay Worker) gets the "reflow" layout.
+  const scope = json?.__DEFAULT_SCOPE__ ?? {};
+  const vd = scope["webapp.video-detail"] ?? scope["webapp.reflow.video.detail"];
   if (!vd) return { status: -1 };
   const it = vd.itemInfo?.itemStruct;
   if (vd.statusCode !== 0 || !it?.id) return { status: vd.statusCode || 404 };

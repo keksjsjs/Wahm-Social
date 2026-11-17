@@ -14,6 +14,7 @@ import { parseEmbedState, parseTikTokRef, parseUserDetail, parseVideoDetail } fr
 import { mapLimit } from "../../server/concurrency";
 import { countikLanguage } from "./countik";
 import { tikwmPost, tikwmStories, tikwmUser } from "./tikwm";
+import { featureOn } from "../../site/flags";
 
 const BASE = "https://www.tiktok.com";
 
@@ -65,8 +66,10 @@ export const tiktok: PlatformAdapter & {
   async getProfile(username) {
     let profile: Profile | undefined;
     let primaryErr: unknown;
+    let itemIds: string[] = [];
     try {
-      const { status, profile: p } = await fetchProfilePage(username);
+      const { status, profile: p, items } = await fetchProfilePage(username);
+      itemIds = items.map((it) => it.id);
       if (status === 10221 || status === 10202 || status === 404 || !p) {
         primaryErr = new PlatformError("not_found", `@${username} was not found on TikTok`, 404);
       } else {
@@ -105,7 +108,11 @@ export const tiktok: PlatformAdapter & {
     profile = await enrichLanguage(profile);
     // Country: prefer user.region from the official page (works with zero posts), then video locations.
     // tikwm user payloads are not used as a country source.
-    profile.location = await import("./region").then((m) => m.resolveLocation(profile!)).catch(() =>
+    if (!featureOn("region")) {
+      profile.location = profile.language ? { recent: [], sample: 0, language: profile.language } : undefined;
+      return profile;
+    }
+    profile.location = await import("./region").then((m) => m.resolveLocation(profile!, itemIds)).catch(() =>
       profile!.language ? { recent: [], sample: 0, language: profile!.language } : undefined,
     );
     return profile;

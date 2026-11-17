@@ -80,6 +80,8 @@ export interface ProfileLocation {
   current?: string;
   /** Where current came from: the account's own region field, or videos. */
   source?: "profile" | "video";
+  /** For video-derived countries: TikTok's own video pages or tikwm's per-video region. */
+  via?: "tiktok" | "tikwm";
   /** Most recent tagged place name, if the creator tagged one. */
   place?: string;
   /** Countries seen across the sampled recent videos, most frequent first. */
