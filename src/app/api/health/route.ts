@@ -9,11 +9,14 @@ import { regionTry } from "@/lib/platforms/tiktok/region";
 import { tikwmTry } from "@/lib/platforms/tiktok/tikwm";
 import { countikTry } from "@/lib/platforms/tiktok/countik";
 import { relayTry, relayTries } from "@/lib/server/relay";
+import { probeProxies } from "@/lib/server/proxyProbe";
+import { proxyList, activeProxyIndex } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
 
-export function GET(req: NextRequest) {
+export async function GET(req: NextRequest) {
   const deep = req.nextUrl.searchParams.get("ig") === "1";
+  const probe = deep && req.nextUrl.searchParams.get("probe") === "1" ? await probeProxies() : undefined;
   return NextResponse.json({
     ok: true,
     service: "frostly",
@@ -27,6 +30,9 @@ export function GET(req: NextRequest) {
       ? {
           // Presence flags and last attempt statuses only — never cookie values.
           scraperProxy: Boolean(env.scraperProxy),
+          scraperProxyCount: proxyList().length,
+          scraperProxyActive: activeProxyIndex(),
+          ...(probe ? { proxyProbe: probe } : {}),
           relayUrl: Boolean(env.relayUrl),
           relayLastTry: relayTry(),
           relayRecentTries: relayTries(),

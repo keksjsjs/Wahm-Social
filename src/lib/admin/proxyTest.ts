@@ -1,11 +1,22 @@
 import "server-only";
-import { DESKTOP_UA, looksLikeBotWall, proxiedFetch } from "../server/http";
+import { DESKTOP_UA, looksLikeBotWall, proxiedFetch, proxyList } from "../server/http";
 import { thirdPartyBlocked } from "../platforms/tiktok/fallback-http";
 import { readRelayUrl, rewriteViaRelay, validateRelayUrl } from "../server/relay";
 
 export { validateRelayUrl } from "../server/relay";
 
+/** Accepts one proxy URL or several separated by commas / new lines (failover order). */
 export function validateProxyUrl(v: string): string | null {
+  const list = proxyList(v);
+  if (!list.length) return "رابط البروكسي غير صالح";
+  for (const one of list) {
+    const bad = validateOneProxy(one);
+    if (bad) return list.length > 1 ? `${bad} (${one.replace(/\/\/[^@]*@/, "//***@")})` : bad;
+  }
+  return null;
+}
+
+function validateOneProxy(v: string): string | null {
   try {
     const u = new URL(v);
     if (u.protocol !== "http:" && u.protocol !== "https:") return "البروكسي لازم يبدأ بـ http:// أو https:// (SOCKS غير مدعوم حالياً)";
@@ -24,9 +35,19 @@ const TARGETS: [string, string][] = [
 
 /** Fetch a few targets through the proxy (or directly when none is set) and describe each result. */
 export async function runProxyTest(candidate?: string): Promise<string> {
-  const using = candidate ?? process.env.SCRAPER_PROXY ?? "";
+  const list = proxyList(candidate ?? process.env.SCRAPER_PROXY ?? "");
+  if (list.length <= 1) return runOneProxyTest(list[0] ?? "", Boolean(candidate));
+  const out: string[] = [];
+  for (let i = 0; i < list.length; i++) {
+    out.push(`— بروكسي #${i + 1} —`);
+    out.push(await runOneProxyTest(list[i], Boolean(candidate)));
+  }
+  return out.join("\n");
+}
+
+async function runOneProxyTest(using: string, typed: boolean): Promise<string> {
   const f = (using ? await proxiedFetch(using) : null) ?? fetch;
-  const lines = [using ? `الاختبار عبر البروكسي${candidate ? " (الرابط اللي كتبته)" : " (المحفوظ)"}:` : "ما فيه بروكسي — الاختبار مباشر من السيرفر:"];
+  const lines = [using ? `الاختبار عبر البروكسي${typed ? " (الرابط اللي كتبته)" : " (المحفوظ)"}:` : "ما فيه بروكسي — الاختبار مباشر من السيرفر:"];
   for (const [label, url] of TARGETS) {
     const t0 = Date.now();
     const ctrl = new AbortController();

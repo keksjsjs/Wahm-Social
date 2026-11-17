@@ -9,7 +9,7 @@ export interface SecretDef {
 }
 
 export const SECRET_DEFS: SecretDef[] = [
-  { key: "scraperProxy", env: "SCRAPER_PROXY", label: "رابط البروكسي SCRAPER_PROXY", group: "proxy", hint: "http://user:pass@host:port (HTTP/HTTPS proxy)" },
+  { key: "scraperProxy", env: "SCRAPER_PROXY", label: "رابط البروكسي SCRAPER_PROXY", group: "proxy", hint: "http://user:pass@host:port (HTTP/HTTPS proxy) — تقدر تحط أكثر من واحد بينهم فاصلة، الأول أساسي والباقي احتياط" },
   { key: "igSessionId", env: "IG_SESSIONID", label: "انستقرام sessionid", group: "instagram" },
   { key: "igCsrfToken", env: "IG_CSRFTOKEN", label: "انستقرام csrftoken", group: "instagram" },
   { key: "igDsUserId", env: "IG_DS_USER_ID", label: "انستقرام ds_user_id", group: "instagram" },

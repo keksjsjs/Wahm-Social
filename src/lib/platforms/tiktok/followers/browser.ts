@@ -5,6 +5,7 @@ import "server-only";
  */
 import type { Connection } from "../../types";
 import { cookieValue, cookiesForBrowser, hasTikTokSession, CHROME_UA } from "../session";
+import { proxyForBrowser } from "../../../server/http";
 
 export type BrowserListResult = {
   items: Connection[];
@@ -14,10 +15,12 @@ export type BrowserListResult = {
   bodyLen?: number;
 };
 
-let lastBrowserTry: { at: string; note: string; status?: number; bodyLen?: number; n?: number } | null = null;
+let lastBrowserTry: { at: string; note: string; status?: number; bodyLen?: number; n?: number; proxy?: boolean; htmlLen?: number } | null = null;
 export const lastBrowserListTry = () => lastBrowserTry;
 
-async function launchBrowser() {
+/** Session traffic in Chromium goes through SCRAPER_PROXY (active entry) when set. */
+async function launchBrowser(proxyServer?: string) {
+  const proxyArgs = proxyServer ? [`--proxy-server=${proxyServer}`] : [];
   const stealthMod = await import("puppeteer-extra-plugin-stealth");
   const puppeteerExtra = await import("puppeteer-extra");
   const puppeteer = puppeteerExtra.default;
@@ -30,7 +33,7 @@ async function launchBrowser() {
         return puppeteer.launch({
           executablePath: bin,
           headless: true,
-          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled", "--lang=en-US"],
+          args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled", "--lang=en-US", ...proxyArgs],
         });
       }
     }
@@ -39,7 +42,7 @@ async function launchBrowser() {
   }
   const chromium = await import("@sparticuz/chromium");
   return puppeteer.launch({
-    args: [...chromium.default.args, "--lang=en-US", "--disable-blink-features=AutomationControlled", "--no-sandbox"],
+    args: [...chromium.default.args, "--lang=en-US", "--disable-blink-features=AutomationControlled", "--no-sandbox", ...proxyArgs],
     defaultViewport: { width: 1365, height: 900 },
     executablePath: await chromium.default.executablePath(),
     headless: true,
@@ -74,9 +77,21 @@ export async function browserList(
   }
 
   let browser: Awaited<ReturnType<typeof launchBrowser>> | null = null;
+  let pageInfo: { proxy: boolean; htmlLen?: number } = { proxy: false };
   try {
-    browser = await launchBrowser();
+    const proxy = proxyForBrowser();
+    browser = await launchBrowser(proxy?.server);
     const page = await browser.newPage();
+    if (proxy?.username) await page.authenticate({ username: proxy.username, password: proxy.password ?? "" });
+    console.warn(`[tiktok-followers] browser proxy=${proxy ? "yes" : "no"}`);
+    // Save proxy bandwidth: skip images, video, fonts (the signed list call is XHR).
+    await page.setRequestInterception(true);
+    page.on("request", (req: { resourceType: () => string; abort: () => Promise<void>; continue: () => Promise<void>; isInterceptResolutionHandled?: () => boolean }) => {
+      if (req.isInterceptResolutionHandled?.()) return;
+      const t = req.resourceType();
+      if (t === "image" || t === "media" || t === "font") req.abort().catch(() => {});
+      else req.continue().catch(() => {});
+    });
     await page.setUserAgent(CHROME_UA);
     await page.setExtraHTTPHeaders({ "accept-language": "en-US,en;q=0.9" });
     await page.setCookie(...cookies);
@@ -145,15 +160,16 @@ export async function browserList(
     });
     region = meta.region;
     const secUid = meta.secUid || secUidHint;
+    pageInfo = { proxy: Boolean(proxy), htmlLen: meta.htmlLen };
     console.warn(`[tiktok-followers] browser page html=${meta.htmlLen} secUid=${secUid ? "yes" : "no"} challenge=${meta.challenge}`);
 
     // Tiny/challenge HTML cannot sign requests — bail before long click waits.
     if (meta.challenge && meta.htmlLen < 8000) {
-      lastBrowserTry = { at: new Date().toISOString(), note: "browser_challenge" };
+      lastBrowserTry = { ...pageInfo, at: new Date().toISOString(), note: "browser_challenge" };
       return { items: [], region, note: "browser_challenge" };
     }
     if (!secUid) {
-      lastBrowserTry = { at: new Date().toISOString(), note: meta.challenge ? "browser_challenge" : "browser_no_secuid" };
+      lastBrowserTry = { ...pageInfo, at: new Date().toISOString(), note: meta.challenge ? "browser_challenge" : "browser_no_secuid" };
       return { items: [], region, note: meta.challenge ? "browser_challenge" : "browser_no_secuid" };
     }
 
@@ -243,11 +259,12 @@ export async function browserList(
 
     const got = captureBox.current;
     if (got?.items.length) {
-      lastBrowserTry = { at: new Date().toISOString(), note: "ok", status: got.status, bodyLen: got.bodyLen, n: got.items.length };
+      lastBrowserTry = { ...pageInfo, at: new Date().toISOString(), note: "ok", status: got.status, bodyLen: got.bodyLen, n: got.items.length };
       console.warn(`[tiktok-followers] browser ok status=${got.status} body=${got.bodyLen} n=${got.items.length}`);
       return { items: got.items, region, note: "ok", status: got.status, bodyLen: got.bodyLen };
     }
     lastBrowserTry = {
+      ...pageInfo,
       at: new Date().toISOString(),
       note: meta.challenge ? "browser_challenge" : "browser_empty",
       status: got?.status,
@@ -256,7 +273,7 @@ export async function browserList(
     return { items: [], region, note: meta.challenge ? "browser_challenge" : "browser_empty", status: got?.status, bodyLen: got?.bodyLen };
   } catch (e) {
     const note = (e as Error).message?.slice(0, 60) || "browser_error";
-    lastBrowserTry = { at: new Date().toISOString(), note };
+    lastBrowserTry = { ...pageInfo, at: new Date().toISOString(), note };
     console.warn(`[tiktok-followers] browser fail: ${note}`);
     return { items: [], note };
   } finally {
