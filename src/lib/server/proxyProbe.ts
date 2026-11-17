@@ -5,6 +5,7 @@ import "server-only";
  */
 import { proxiedFetch, proxyList, activeProxyIndex } from "./http";
 import { tiktokCookieHeader, CHROME_UA } from "../platforms/tiktok/session";
+import { probeInstagram } from "../pools/probe";
 
 type ProbeRow = {
   idx: number;
@@ -16,6 +17,8 @@ type ProbeRow = {
   loggedIn?: boolean;
   waf?: boolean;
   error?: string;
+  /** Anonymous Instagram public-profile JSON through the same proxy (status + verdict only). */
+  instagram?: { status?: number; verdict: string; note?: string };
 };
 let cached: { at: number; rows: ProbeRow[] } | null = null;
 
@@ -52,6 +55,8 @@ export async function probeProxies(username = "khaby.lame"): Promise<{ at: strin
         loggedIn: Boolean(m && m[1] !== "0"),
         waf: !realProfile && /_wafchallengeid|tiktok-verify-page|captcha|slardar/i.test(text.slice(0, 20000)),
       });
+      const ig = await probeInstagram(f).catch(() => null);
+      if (ig) rows[rows.length - 1].instagram = { status: ig.status, verdict: ig.verdict, note: ig.note };
     } catch (e) {
       rows.push({ idx: i, host, ms: Date.now() - t0, error: String((e as Error).name === "AbortError" ? "timeout" : (e as Error).message).slice(0, 80) });
     } finally {

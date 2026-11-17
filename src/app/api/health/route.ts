@@ -8,7 +8,10 @@ import { lastBrowserListTry } from "@/lib/platforms/tiktok/followers/browser";
 import { regionTry } from "@/lib/platforms/tiktok/region";
 import { tikwmTry } from "@/lib/platforms/tiktok/tikwm";
 import { countikTry } from "@/lib/platforms/tiktok/countik";
-import { relayTry, relayTries } from "@/lib/server/relay";
+import { relayList, relayTry, relayTries } from "@/lib/server/relay";
+import { activeSessionNumber } from "@/lib/pools/apply";
+import { locationDiag } from "@/lib/platforms/tiktok/location";
+import { recentErrors } from "@/lib/server/errorLog";
 import { probeProxies } from "@/lib/server/proxyProbe";
 import { proxyList, activeProxyIndex } from "@/lib/server/http";
 
@@ -34,6 +37,10 @@ export async function GET(req: NextRequest) {
           scraperProxyActive: activeProxyIndex(),
           ...(probe ? { proxyProbe: probe } : {}),
           relayUrl: Boolean(env.relayUrl),
+          relayCount: relayList().length,
+          sessionPools: { tiktok: activeSessionNumber("tiktok"), instagram: activeSessionNumber("instagram") },
+          tiktokLastLocationSample: locationDiag(),
+          recentErrorCount: recentErrors().length,
           relayLastTry: relayTry(),
           relayRecentTries: relayTries(),
           tiktokSession: Boolean(env.tiktokSessionId),
